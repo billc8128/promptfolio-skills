@@ -1,0 +1,28 @@
+{
+  "name": "@promptfolio/skills",
+  "version": "0.1.0",
+  "description": "promptfolio skills/workflows for Claude Code, Cursor, Codex, OpenClaw, and Antigravity",
+  "scripts": {
+    "postinstall": "node scripts/install.js"
+  },
+  "files": [
+    "promptfolio-summarize/",
+    "promptfolio-search/",
+    "scripts/"
+  ],
+  "keywords": [
+    "claude-code",
+    "codex",
+    "openclaw",
+    "cursor",
+    "antigravity",
+    "skills",
+    "profile",
+    "promptfolio"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/billc8128/promptfolio"
+  }
+}
