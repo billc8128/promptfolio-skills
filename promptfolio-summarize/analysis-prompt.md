@@ -38,24 +38,31 @@ Characteristics of framework sentences:
 
 ### What You're Also Looking For: Instances
 
-**Instances** are moments where the user demonstrated knowledge, taste, or cognitive depth that clearly surpassed the AI model. The most valuable instances are those where:
+**Instances** are **case studies** — stories of how this person navigated complex, multi-turn tasks that reveal their professional depth, unique taste, and ability to steer outcomes beyond what AI alone could achieve. Think of it this way: if a headhunter were introducing this candidate to a hiring manager, they'd say "let me tell you about something they did" — that's an instance.
 
-1. **Domain expertise the model lacked** — the user knew an API quirk, an architectural trade-off, a platform constraint, or an industry convention that the AI couldn't have known. The user's correction came from *lived experience*, not from information available in training data.
-2. **Taste and judgment that overruled the AI** — the AI produced something technically correct but the user rejected it because it violated their design sensibility, UX intuition, or engineering aesthetics. The user's "this feels wrong" turned out to be right.
-3. **Cognitive depth** — the user anticipated edge cases the AI missed, applied systems thinking to see downstream consequences, or used cross-domain reasoning to reframe the problem entirely.
+**How instances differ from framework sentences:** Framework sentences capture what the user **says** (principles, mental models, aesthetic declarations). Instances capture what the user **does** — how they drive a complex task from start to finish, what decisions they make along the way, and what those decisions reveal about their caliber. The same conversation may yield both a framework sentence (the quote) and an instance (the story), but the two serve fundamentally different purposes: one is a voice print, the other is a track record.
+
+**What to look for when scanning sessions:**
+
+1. **Complex task orchestration** — the user drove a multi-step task across multiple turns, making architectural calls, prioritizing trade-offs, and arriving at an outcome that wouldn't have happened through AI auto-pilot. The story is in how they *steered*, not just that they corrected errors.
+2. **Domain expertise in action** — the user applied knowledge from lived experience (API quirks, platform constraints, industry conventions, architectural trade-offs) that shaped the direction of work. The knowledge itself isn't the story — how it changed the outcome is.
+3. **Taste and judgment under pressure** — the user rejected something technically correct because it violated their standards. The interesting part is what those standards *are* and how they manifest in real decisions, not that the AI got it wrong.
+4. **Cross-domain synthesis** — the user connected concepts across layers (UX ↔ backend, business logic ↔ data model, performance ↔ user psychology) to reframe a problem in a way the AI hadn't considered.
+
+**The right granularity is a "project story", not a "correction moment."** A good instance spans multiple turns of a session — the user set a direction, the AI worked on it, the user steered through obstacles, and the outcome reveals something about this person's caliber. It's not "user caught bug X" — it's "here's how user built/designed/solved Y, and what that tells you about them."
 
 What makes a good instance:
-- It tells a **specific, concrete story** — not "the user helped debug things" but a vivid anecdote with a clear before/after
-- The user's contribution reveals something **non-obvious** — knowledge or judgment that most developers wouldn't have
-- It makes the reader think "this person *knows* something I don't"
-- The `tags` are **precise enough for search** — "WebSocket-reconnection", "payment-idempotency", "mobile-gesture-ux" rather than "backend", "payments", "mobile"
+- It reads like a **case study vignette** — a headhunter telling you about a candidate's track record over coffee
+- The story has **arc**: situation → the user's key decisions/insights → what it reveals about them
+- It differentiates this person from others — after reading it, you understand something about their **caliber** that a resume wouldn't show
+- The `sparkle` distills what makes this person remarkable in one sentence — as if the headhunter said "and *that's* why this person is special"
+- The `tags` are **precise enough for search** — follow the user's primary language: "WebSocket重连策略", "支付幂等性", "移动端手势交互" (Chinese) or "WebSocket-reconnection", "payment-idempotency", "mobile-gesture-ux" (English) rather than generic labels like "后端", "支付", "前端" or "backend", "payments", "mobile"
 - Privacy is preserved — no project/company/repo names, generic domain descriptions only
 
 What is NOT a good instance (exclude these):
+- Single-turn corrections ("you forgot to import X", "wrong file path")
 - Simple bug fixes or syntax corrections
-- "Use library X instead of Y" without deeper reasoning
-- Routine code review feedback
-- The AI hallucinated and the user caught it (that's the AI's failure, not the user's insight)
+- The AI hallucinated and the user caught it (that's the AI's failure, not the user's caliber)
 - Generic best-practice advice that any senior developer would give
 
 ### What Are NOT Framework Sentences (Explicit Exclusions)
@@ -78,10 +85,11 @@ No quantity limit in Phase 1. Collect everything. If the same idea recurs across
 
 ### Step 1b: Collect Instances
 
-While scanning sessions, also identify moments where the user's knowledge or judgment clearly surpassed the AI. For each instance:
-1. Write a short narrative (2-4 sentences, third person) that tells the story as a flowing anecdote — what the AI was doing, what the user saw that the AI didn't, and how it played out. Like a case study vignette, not a structured report.
-2. Assign specific, search-friendly tags.
-3. Only keep instances where the user's contribution reveals genuine domain expertise, taste, or cognitive depth — skip routine corrections.
+While scanning sessions, identify complex multi-turn tasks where the user's decisions and steering reveal their professional caliber. For each instance:
+1. Write a narrative (2-4 sentences, third person) that tells the story like a headhunter describing a candidate's track record — the situation, the user's key decisions, and what those decisions reveal about them. Not a structured report — a case study vignette.
+2. Write a `sparkle` — one sentence from a third-party analyst's perspective: "this person is remarkable because..." Not a summary of the narrative — a *judgment* about caliber.
+3. Assign specific, search-friendly tags in the user's primary language.
+4. Only keep instances that differentiate this person — stories that show caliber a resume wouldn't convey.
 
 No quantity limit. Collect all that meet the bar.
 
@@ -177,8 +185,9 @@ This output has **no quantity limits**. Collect everything.
   ],
   "instances": [
     {
-      "narrative": "2-4句第三人称叙事。把情境、用户的洞察、结果编织成一个流畅段落——像案例研究小品文。",
-      "tags": ["具体技术标签", "具体领域标签"]
+      "narrative": "在构建一套认证系统时，[USER]发现 AI 直接在前端做 token 校验。TA 立刻叫停，指出这不是功能问题而是安全边界问题——token 校验必须在后端完成，前端只做跳转。这个判断来自对 OAuth 流程的深层理解。",
+      "sparkle": "能在功能讨论中瞬间切换到安全视角，说明此人的架构思维是分层的，不是线性的。",
+      "tags": ["认证架构安全边界", "OAuth-token校验", "前后端职责划分"]
     }
   ],
   "fullDesc": "对这个人的完整描述，500字以内。涵盖技术栈、工作领域、思维方式、协作风格、审美标准等。"
@@ -198,8 +207,9 @@ This output has **no quantity limits**. Collect everything.
   ],
   "instances": [
     {
-      "narrative": "A 2-4 sentence story in third person. Weaves the situation, the user's insight, and the outcome into one flowing paragraph — like a case study vignette.",
-      "tags": ["specific-tech-tag", "specific-domain-tag"]
+      "narrative": "While building a real-time collaboration feature, [USER] noticed the AI was polling the server every 2 seconds. Instead of just switching to WebSocket, they redesigned the entire sync model — separating ephemeral presence data from persistent state, using WebSocket only for presence and keeping REST for mutations. This revealed a systems-level understanding of data consistency trade-offs.",
+      "sparkle": "Sees through the 'just use WebSocket' reflex to the underlying data architecture question — thinks in state categories, not transport protocols.",
+      "tags": ["real-time-sync-architecture", "WebSocket-vs-REST-tradeoff", "state-consistency-model"]
     }
   ],
   "fullDesc": "A comprehensive description of this person, max 500 words. Covers tech stack, domains, thinking style, collaboration patterns, aesthetic standards, etc."
@@ -208,7 +218,7 @@ This output has **no quantity limits**. Collect everything.
 
 **Phase 1 field rules:**
 - `frameworkSentences`: **No limit.** Collect all. Merge recurring ideas (bump `frequency`).
-- `instances`: **No limit.** Only include instances where the user's contribution reveals genuine domain expertise, taste, or cognitive depth that clearly surpasses the model. Tags must be specific enough to match search queries (e.g., "WebSocket-reconnection", "payment-idempotency", "CSS-grid-layout" — not "backend", "payments", "frontend").
+- `instances`: **No limit.** Only include instances where the user's contribution reveals genuine domain expertise, taste, or cognitive depth that clearly surpasses the model. **Every instance MUST have all three fields: `narrative`, `sparkle`, and `tags`.** Tags must follow the user's primary language and be specific enough to match search queries (e.g., "认证架构安全边界", "前后端职责划分" for Chinese; "WebSocket-vs-REST-tradeoff", "state-consistency-model" for English — NOT generic labels like "后端", "安全" or "backend", "security").
 - `fullDesc`: **Max 500 words.** Dense, evidence-backed. Include specific technologies, frameworks, tools. This is the primary embedding text for search.
 
 ### Phase 2 Output: Display Portrait (`portrait.json`)
@@ -332,8 +342,9 @@ This output is curated from Phase 1 results. Framework sentences: include **all*
 - `insight`: One sentence interpretation. Don't paraphrase the original — say why the quote **is not ordinary**. "Most people would say X, but this person said Y — which reveals..."
 
 **`instances` (no limit, Phase 1 only):**
-- `narrative`: A 2-4 sentence story told in third person. Weave the situation, the user's insight, and the outcome into one flowing paragraph — like a case study vignette, not a structured report. Use `[USER]` as the subject. The narrative should make the reader think "this person knows something I don't." Written in the user's primary language.
-- `tags`: Array of specific, search-friendly tags. Use concrete terms: "WebSocket-reconnection", "payment-idempotency", "CSS-grid-layout", "database-migration", "mobile-gesture-ux". NOT generic labels like "backend", "frontend", "debugging".
+- `narrative`: A 2-4 sentence case study vignette told in third person. Tell the story like a headhunter describing a candidate — the situation, the user's key decisions and steering, and what those decisions reveal about their caliber. Use `[USER]` as the subject. The story should span the arc of a complex task, not a single correction moment. Written in the user's primary language.
+- `sparkle`: One sentence third-party judgment — "this person is remarkable because..." Not a summary of the narrative, but a distillation of what this story tells you about the person's caliber that a resume wouldn't show. Written in the user's primary language.
+- `tags`: Array of specific, search-friendly tags. **Follow the user's primary language** like all other generated text. Use concrete terms: "WebSocket重连策略", "支付幂等性", "CSS-grid布局" (Chinese) or "WebSocket-reconnection", "payment-idempotency", "CSS-grid-layout" (English). NOT generic labels like "后端", "前端", "调试" or "backend", "frontend", "debugging".
 
 **`fullDesc` (max 500 words, Phase 1 only):**
 - A comprehensive, evidence-backed description of this person.

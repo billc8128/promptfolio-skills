@@ -210,10 +210,12 @@ For each session, scan every user message for:
    - Expressing aesthetic judgments: "This is ugly" / "太丑了", "Now that's right" / "这才对", "This feels wrong" / "感觉不对"
    - Revealing contradictions between different sessions
 
-2. **Instances** — multi-turn problem-solving scenarios where the user and AI collaborate to resolve something:
-   - **Prioritize** cases where the AI started off wrong and the user corrected its direction
-   - Look for: the user reframing the problem, rejecting an approach, redirecting strategy, or providing domain insight that changed the outcome
-   - Also include: cases where the user drove a complex multi-step solution through iteration
+2. **Instances** — case studies of complex multi-turn tasks where the user's steering reveals their caliber. Think: how would a headhunter describe this person's track record?
+   - The user drove a complex task across multiple turns, making architectural calls and trade-off decisions that shaped the outcome
+   - The user applied domain expertise from lived experience — API quirks, platform constraints, industry conventions
+   - The user's taste and judgment overruled technically correct but aesthetically wrong solutions
+   - The user connected concepts across domains to reframe the problem
+   - The story is about the **arc** of the task and the user's role in it, not a single correction moment
 
 3. **Domains touched** — what areas does this person work in? (For `topDomains` output)
 
@@ -239,8 +241,9 @@ Generate the following JSON and save to `_pf_parts/search_profile.json`:
   ],
   "instances": [
     {
-      "narrative": "2-4句第三人称叙事。把情境、用户的洞察、结果编织成一个流畅段落——像案例研究小品文。",
-      "tags": ["relevant-tech-or-domain-tag-1", "tag-2"]
+      "narrative": "在构建一套认证系统时，[USER]发现 AI 直接在前端做 token 校验。TA 立刻叫停，指出这不是功能问题而是安全边界问题——token 校验必须在后端完成，前端只做跳转。这个判断来自对 OAuth 流程的深层理解。",
+      "sparkle": "能在功能讨论中瞬间切换到安全视角，说明此人的架构思维是分层的，不是线性的。",
+      "tags": ["认证架构安全边界", "OAuth-token校验", "前后端职责划分"]
     }
   ],
   "fullDesc": "对这个人的完整描述，500字以内。涵盖：技术栈、工作领域、思维方式、协作风格、审美标准等。每个判断都要有对话证据支撑。不是简历，是一个知情者对这个人的全面介绍。"
@@ -249,7 +252,7 @@ Generate the following JSON and save to `_pf_parts/search_profile.json`:
 
 **Key rules for Phase 1:**
 - `frameworkSentences`: **No quantity limit.** Collect ALL framework sentences found. Don't filter — that's Phase 2's job. If the same idea recurs across sessions, merge into one entry with `frequency` count.
-- `instances`: **No quantity limit.** Prioritize cases where the AI was wrong and the user corrected it. Each instance's `narrative` should be a 2-4 sentence third-person story weaving situation, insight, and outcome into a fluent paragraph. Tags should be specific enough to enable search matching (e.g., "WebSocket", "payment-flow", "mobile-ux" rather than "backend").
+- `instances`: **No quantity limit.** Each instance is a case study of a complex multi-turn task — how the user steered, what decisions they made, what those decisions reveal about their caliber. Think headhunter describing a candidate's track record, not QA logging corrections. `narrative` is a 2-4 sentence third-person vignette with arc (situation → user's key decisions → what it reveals). `sparkle` is a one-sentence third-party judgment on what makes this person remarkable. Tags follow the user's primary language and must be specific (e.g., "WebSocket重连策略", "支付幂等性" or "WebSocket-reconnection", "payment-idempotency").
 - `fullDesc`: **Max 500 words.** A dense, evidence-backed description of this person. Include specific technologies, tools, and domains they work with. This is the primary text used for search embedding — make it information-rich.
 - **Privacy:** `[USER]` replaces username. Remove project/company/repo names. Keep domain descriptions generic.
 - **Language:** Same rules as everywhere — output in the user's primary language.
