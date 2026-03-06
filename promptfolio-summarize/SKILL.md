@@ -293,6 +293,9 @@ Select the best framework sentences from Phase 1 and generate the portrait:
   "capabilityRings": [
     { "name": "能力名称", "tier": "core" }
   ],
+  "decisionStyle": [
+    { "key": "killVsInvent", "name": "破立倾向", "left": "渐进优化", "right": "推翻重来", "score": 78, "evidence": [{ "quote": "用户原话", "context": "情境描述" }], "take": "AI 锐评" }
+  ],
   "behavioralInsights": [
     "结合多个行为数据点的个性化解读（如有 behavioral_fingerprint.json）",
     "指出数据和对话内容之间的张力或有趣模式"

@@ -97,6 +97,39 @@ Based on all collected framework sentences and instances, write a comprehensive 
 
 Every claim should be backed by evidence from conversations. This is not a resume — it's an informed description written by someone who's observed this person working.
 
+### Step 1d: Extract Decision Style
+
+From the collected framework sentences and conversation evidence, assess the user's **decision-making behavioral patterns** across 5 dimensions. These are not skills — they are how the person makes decisions.
+
+For each dimension, find specific quotes that reveal where the user falls on the spectrum:
+
+1. **Kill vs Invent** (`killVsInvent`) — Does the user iterate on existing solutions, or tear everything down and start fresh?
+   - Look for: "this approach is wrong, start over" vs "let's tweak this part"
+   - 0 = always iterates, 100 = always reinvents
+
+2. **Naming vs Executing** (`namingVsExecuting`) — Does the user define frameworks and coin terms, or work within existing frameworks?
+   - Look for: user creating new concepts/terminology vs following established patterns
+   - 0 = executes within frameworks, 100 = names and defines frameworks
+
+3. **Intuition vs Data** (`intuitionVsData`) — Is the decision trigger a gut feeling or data analysis?
+   - Look for: "feels wrong" / "can't explain why" vs "the data shows" / "based on metrics"
+   - 0 = data-first, 100 = intuition-first
+
+4. **Calibrate vs Ship** (`calibrateVsShip`) — Does the user align thoroughly before starting, or ship fast and iterate?
+   - Look for: "let's discuss before coding" vs "just build it, I'll review"
+   - 0 = ship fast, 100 = calibrate first
+
+5. **Subtract vs Add** (`subtractVsAdd`) — When facing complexity, does the user add features or cut them?
+   - Look for: "remove this", "too many steps" vs "we also need", "add support for"
+   - 0 = additive, 100 = subtractive
+
+For each dimension:
+- Assign a score (0-100) based on evidence strength and frequency
+- Collect 1-3 direct quotes as evidence, each with a one-line context
+- Write a one-sentence AI "take" — a sharp, specific observation about this person's pattern on this dimension. Same voice as portrait `tension`: pointed, might reveal a contradiction, makes you smile.
+
+**Important:** Only include dimensions where you have clear evidence. If a dimension has no supporting quotes, skip it rather than guess.
+
 ### Step 2: Read the Person from the Framework Sentences
 
 Don't apply templates. Take these framework sentences and ask yourself:
@@ -218,6 +251,19 @@ This output is curated from Phase 1 results. Framework sentences: include **all*
   },
   "capabilityRings": [
     { "name": "能力名称", "tier": "core|proficient|peripheral" }
+  ],
+  "decisionStyle": [
+    {
+      "key": "killVsInvent",
+      "name": "破立倾向",
+      "left": "渐进优化",
+      "right": "推翻重来",
+      "score": 78,
+      "evidence": [
+        { "quote": "用户原话", "context": "一句话情境描述" }
+      ],
+      "take": "AI 的一句话锐评"
+    }
   ]
 }
 ```
@@ -258,6 +304,19 @@ This output is curated from Phase 1 results. Framework sentences: include **all*
   },
   "capabilityRings": [
     { "name": "Capability name", "tier": "core|proficient|peripheral" }
+  ],
+  "decisionStyle": [
+    {
+      "key": "killVsInvent",
+      "name": "Decision Trigger",
+      "left": "Iterate",
+      "right": "Reinvent",
+      "score": 78,
+      "evidence": [
+        { "quote": "User's original words", "context": "One-line situation description" }
+      ],
+      "take": "AI's one-sentence sharp observation"
+    }
   ]
 }
 ```
@@ -322,6 +381,19 @@ Infer from conversations which capability domains the user is involved in, class
 - `peripheral`: Domains the user has dabbled in but not deeply (2-4 items)
 
 Each item's `name` should be a concise capability label (e.g., "Product Architecture", "Interaction Design", "Data Visualization").
+
+**`decisionStyle` (1-5 dimensions, only those with evidence):**
+
+Each item describes one decision-making dimension:
+- `key`: One of `killVsInvent`, `namingVsExecuting`, `intuitionVsData`, `calibrateVsShip`, `subtractVsAdd`
+- `name`: A vivid dimension label in the user's language (e.g., "破立倾向", "定义权", "Decision Trigger")
+- `left`: Label for the 0-end pole (e.g., "渐进优化", "Iterate")
+- `right`: Label for the 100-end pole (e.g., "推翻重来", "Reinvent")
+- `score`: 0-100 integer based on evidence
+- `evidence`: Array of 1-3 objects, each with `quote` (user's original words) and `context` (one-line situation description, no project names)
+- `take`: AI's one-sentence sharp observation about this dimension — same voice as portrait `tension`
+
+Only include dimensions with clear conversational evidence. Skip dimensions where you'd be guessing.
 
 ---
 

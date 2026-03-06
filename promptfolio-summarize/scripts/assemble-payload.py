@@ -47,6 +47,7 @@ payload = {
         "topDomains": portrait.get("topDomains", []),
         "cognitiveStyle": portrait.get("cognitiveStyle") or None,
         "capabilityRings": portrait.get("capabilityRings") or None,
+        "decisionStyle": portrait.get("decisionStyle") or None,
     },
     "activityMap": activity,
     "sessionsAnalyzed": meta["sessionsAnalyzed"],
