@@ -634,6 +634,232 @@ activity_result["summary"] = {
     ),
 }
 
+# ── Behavioral fingerprint extraction ─────────────────────────────────
+
+import sqlite3
+from pathlib import Path
+from collections import Counter
+
+behavioral = {}
+
+# 1. Claude Code tool usage + model preference from session JSONLs
+CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
+bf_tool_counts = Counter()
+bf_model_counts = Counter()
+
+if CLAUDE_PROJECTS.exists():
+    for jsonl_path in CLAUDE_PROJECTS.rglob("*.jsonl"):
+        if "/subagents/" in str(jsonl_path):
+            continue
+        try:
+            with open(jsonl_path, "r", encoding="utf-8", errors="replace") as jf:
+                for line in jf:
+                    try:
+                        entry = json.loads(line.strip())
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+                    msg = entry.get("message", {})
+                    role = msg.get("role", "")
+                    if role == "assistant":
+                        model = msg.get("model", "")
+                        if model:
+                            short = model.replace("claude-", "").replace("-20250514", "").replace("-20250929", "")
+                            bf_model_counts[short] += 1
+                        for block in (msg.get("content") or []):
+                            if isinstance(block, dict) and block.get("type") == "tool_use":
+                                bf_tool_counts[block.get("name", "")] += 1
+        except (OSError, UnicodeDecodeError):
+            continue
+
+behavioral["modelPreference"] = dict(bf_model_counts.most_common())
+behavioral["toolFingerprint"] = dict(bf_tool_counts.most_common(10))
+behavioral["totalToolCalls"] = sum(bf_tool_counts.values())
+
+reads = bf_tool_counts.get("Read", 0)
+writes = bf_tool_counts.get("Write", 0) + bf_tool_counts.get("Edit", 0)
+behavioral["readWriteRatio"] = round(reads / writes, 1) if writes > 0 else None
+
+# 2. Cursor AI collaboration stats
+CURSOR_DB = Path.home() / ".cursor" / "ai-tracking" / "ai-code-tracking.db"
+if CURSOR_DB.exists():
+    try:
+        cdb = sqlite3.connect(str(CURSOR_DB))
+        row = cdb.execute(
+            "SELECT count(*), sum(linesAdded), sum(tabLinesAdded), sum(composerLinesAdded), sum(humanLinesAdded) FROM scored_commits"
+        ).fetchone()
+        if row and row[1]:
+            total_lines = row[1] or 0
+            ai_lines = (row[2] or 0) + (row[3] or 0)
+            behavioral["aiCollabRatio"] = round(ai_lines / total_lines * 100, 1) if total_lines > 0 else 0
+            behavioral["trackedCommits"] = row[0]
+
+        tech_stack = []
+        total_ext = cdb.execute("SELECT count(*) FROM ai_code_hashes WHERE fileExtension IS NOT NULL").fetchone()[0]
+        for erow in cdb.execute(
+            "SELECT fileExtension, count(*) FROM ai_code_hashes WHERE fileExtension IS NOT NULL GROUP BY fileExtension ORDER BY count(*) DESC LIMIT 10"
+        ):
+            tech_stack.append({"ext": erow[0], "count": erow[1], "percentage": round(erow[1] / total_ext * 100, 1) if total_ext > 0 else 0})
+        behavioral["techStack"] = tech_stack
+        cdb.close()
+    except Exception as e:
+        print(f"  Behavioral: Cursor DB error: {e}")
+
+# 3. Claude Code history — reject rate & input style
+CLAUDE_HISTORY = Path.home() / ".claude" / "history.jsonl"
+if CLAUDE_HISTORY.exists():
+    reject_patterns = ["太烂", "不对", "更烂", "重新", "不是这个意思", "错了",
+                       "不行", "不要", "删掉", "回退", "不好", "丑", "太长",
+                       "你是认真的", "太假"]
+    total_hist = 0
+    reject_cnt = 0
+    msg_lengths = []
+    try:
+        for line in open(CLAUDE_HISTORY, "r", encoding="utf-8", errors="replace"):
+            try:
+                d = json.loads(line.strip())
+                total_hist += 1
+                text = d.get("display", "")
+                msg_lengths.append(len(text))
+                for p in reject_patterns:
+                    if p in text:
+                        reject_cnt += 1
+                        break
+            except (json.JSONDecodeError, KeyError):
+                continue
+        behavioral["rejectRate"] = round(reject_cnt / total_hist * 100, 1) if total_hist > 0 else 0
+        behavioral["avgMessageLength"] = round(sum(msg_lengths) / len(msg_lengths)) if msg_lengths else 0
+    except OSError:
+        pass
+
+# 4. Settings — allowed commands count
+CLAUDE_SETTINGS = Path.home() / ".claude" / "settings.local.json"
+if CLAUDE_SETTINGS.exists():
+    try:
+        settings = json.loads(CLAUDE_SETTINGS.read_text())
+        allows = settings.get("permissions", {}).get("allow", [])
+        behavioral["permanentAllows"] = len(allows)
+    except (json.JSONDecodeError, OSError):
+        pass
+
+# 5. Activity heatmap from sessions
+bf_hourly = Counter()
+bf_weekly = Counter()
+for day_key, d in activity_days.items():
+    for ts_dt in d["timestamps"]:
+        try:
+            lt = ts_dt.astimezone(local_tz)
+            bf_hourly[lt.hour] += 1
+            bf_weekly[lt.strftime("%A")] += 1
+        except Exception:
+            pass
+behavioral["activityHeatmap"] = {
+    "hourly": dict(sorted(bf_hourly.items())),
+    "weekly": {d_name: bf_weekly.get(d_name, 0) for d_name in
+               ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]},
+}
+
+# 6. Cross-agent project count
+#    Derive project identifiers from all session paths
+bf_projects = set()
+for spath in sessions:
+    src = classify(spath)
+    if src == "claude-code":
+        # ~/.claude/projects/-Users-user-projectname/uuid.jsonl → project dir
+        m = re.search(r"/\.claude/projects/([^/]+)", spath)
+        if m:
+            bf_projects.add(("claude-code", m.group(1)))
+    elif src == "cursor":
+        # Cursor stores per-workspace: ~/.cursor/workspaceStorage/<hash>/...
+        m = re.search(r"/\.cursor/workspaceStorage/([^/]+)", spath)
+        if m:
+            bf_projects.add(("cursor", m.group(1)))
+    elif src == "codex":
+        m = re.search(r"/\.codex/([^/]+)", spath)
+        if m:
+            bf_projects.add(("codex", m.group(1)))
+    elif src == "windsurf":
+        m = re.search(r"/(\.windsurf|\.codeium|Windsurf)/([^/]+)", spath)
+        if m:
+            bf_projects.add(("windsurf", m.group(2)))
+    elif src == "antigravity":
+        m = re.search(r"/(Antigravity|\.gemini/antigravity)/([^/]+)", spath)
+        if m:
+            bf_projects.add(("antigravity", m.group(2)))
+behavioral["projectCount"] = len(bf_projects)
+
+# ── Signature matching ───────────────────────────────────────────────
+
+signatures = []
+
+# Model preference
+mp = behavioral.get("modelPreference", {})
+total_model = sum(mp.values()) if mp else 0
+if total_model > 0:
+    opus_pct = sum(v for k, v in mp.items() if "opus" in k) / total_model * 100
+    sonnet_pct = sum(v for k, v in mp.items() if "sonnet" in k) / total_model * 100
+    if opus_pct > 60 and behavioral.get("rejectRate", 0) > 10:
+        signatures.append("挑剔的甲方")
+    if opus_pct > 40 and sonnet_pct > 30:
+        signatures.append("双模型切换者")
+
+# Terminal native
+bash_count = bf_tool_counts.get("Bash", 0)
+total_tc = behavioral.get("totalToolCalls", 0)
+bash_pct = round(bash_count / total_tc * 100) if total_tc > 0 else 0
+if behavioral.get("permanentAllows", 0) > 30 and bash_pct > 35:
+    signatures.append("Terminal 原住民")
+
+# Concise tyrant
+if behavioral.get("rejectRate", 0) > 10 and behavioral.get("avgMessageLength", 999) < 60:
+    signatures.append("惜字如金型暴君")
+
+# Action-oriented
+if behavioral.get("readWriteRatio") is not None and behavioral["readWriteRatio"] < 1.5 and behavioral.get("avgMessageLength", 999) < 80:
+    signatures.append("少说多做")
+
+# Full-stack
+ts_list = behavioral.get("techStack", [])
+lang_exts = [t["ext"] for t in ts_list if t["ext"] not in ("md", "json", "css", "html", "pen")]
+if len(lang_exts) >= 5:
+    signatures.append("全栈穿越者")
+has_swift = any(t["ext"] == "swift" for t in ts_list)
+has_ts = any(t["ext"] in ("ts", "tsx") for t in ts_list)
+has_py = any(t["ext"] == "py" for t in ts_list)
+if has_swift and has_ts:
+    signatures.append("Web + Mobile 双线")
+if has_py and has_ts:
+    signatures.append("工程 + 脚本双修")
+
+# Night owl / weekend warrior
+hm = behavioral.get("activityHeatmap", {})
+hourly_counts = hm.get("hourly", {})
+total_act = sum(hourly_counts.values()) if hourly_counts else 0
+if total_act > 0:
+    late_night = sum(v for h, v in hourly_counts.items() if int(h) >= 0 and int(h) <= 5)
+    if late_night / total_act > 0.12:
+        signatures.append("夜猫子")
+weekly_counts = hm.get("weekly", {})
+total_week = sum(weekly_counts.values()) if weekly_counts else 0
+if total_week > 0:
+    weekend = weekly_counts.get("Saturday", 0) + weekly_counts.get("Sunday", 0)
+    if weekend / total_week > 0.25:
+        signatures.append("不下班的人")
+
+# Agent commander
+agent_count = bf_tool_counts.get("Agent", 0)
+task_count = bf_tool_counts.get("TaskCreate", 0)
+if total_tc > 0 and agent_count / total_tc > 0.05 and task_count / total_tc > 0.02:
+    signatures.append("分治型指挥官")
+
+behavioral["_signatures"] = signatures
+
+print(f"\n=== Behavioral Fingerprint ===")
+print(f"Tool calls: {behavioral.get('totalToolCalls', 0)}")
+print(f"Models: {dict(bf_model_counts.most_common(3))}")
+print(f"AI collab ratio: {behavioral.get('aiCollabRatio', 'N/A')}%")
+print(f"Reject rate: {behavioral.get('rejectRate', 'N/A')}%")
+print(f"Signatures: {signatures}")
+
 # ── Save activity.json & meta.json ────────────────────────────────────
 
 os.makedirs("_pf_parts", exist_ok=True)
@@ -642,6 +868,9 @@ with open("_pf_parts/activity.json", "w") as f:
 
 with open("_pf_parts/meta.json", "w") as f:
     json.dump({"sessionsAnalyzed": len(sessions), "totalTokens": total_tokens}, f)
+
+with open("_pf_parts/behavioral_fingerprint.json", "w") as f:
+    json.dump(behavioral, f, ensure_ascii=False)
 
 # ── Print summary ─────────────────────────────────────────────────────
 

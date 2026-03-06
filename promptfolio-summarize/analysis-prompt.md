@@ -325,6 +325,34 @@ Each item's `name` should be a concise capability label (e.g., "Product Architec
 
 ---
 
+## Behavioral Fingerprint Insights
+
+If the user message includes a `[BEHAVIORAL FINGERPRINT]` section with quantitative data extracted from their local coding agent, you MUST generate a `behavioralInsights` field in your Phase 2 output.
+
+**What you receive:** Raw numbers — tool call counts, model usage distribution, reject rate, AI code ratio, tech stack, activity hours, permanent allowed commands count, etc. Plus a list of matched signature tags (e.g., "Terminal 原住民", "双模型切换者").
+
+**What you produce:** 3-5 sentences of personalized interpretation in **third person** (never "你"). NOT generic labels — real observations that combine multiple data points and tell a story about this person's relationship with AI tools.
+
+**Rules:**
+- Use third person throughout. Write as if describing someone to a reader: "典型的 Read-first 开发者" not "你是一个 Read-first 开发者".
+- Combine 2-3 data points per insight. Single-metric observations are boring.
+- Reference actual numbers. "63% 的代码来自 AI，但 11% 被打回" is better than "协作型用户".
+- Look for tensions/contradictions between behavioral data and conversation content. E.g., high reject rate in data + a framework sentence about "trusting the process" = interesting tension.
+- Match the user's language (Chinese insights for Chinese users, English for English users).
+- The signature tags give you a starting point, but go deeper — explain *why* the pattern matters for this specific person.
+
+**Phase 2 output addition:**
+```json
+{
+  "behavioralInsights": [
+    "一句个性化解读，结合多个数据点",
+    "另一句，可能指出数据和对话内容之间的张力"
+  ]
+}
+```
+
+---
+
 ## Quality Checks
 
 After writing, check your output with these three tests:

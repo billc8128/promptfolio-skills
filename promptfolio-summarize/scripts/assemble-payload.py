@@ -3,10 +3,11 @@
 Assemble the sync payload from _pf_parts/ partial files.
 
 Reads:
-  _pf_parts/portrait.json       – framework sentences + portrait (AI analysis, Phase 2)
-  _pf_parts/search_profile.json – full search profile (AI analysis, Phase 1)
-  _pf_parts/activity.json       – activity heat map data
-  _pf_parts/meta.json           – {sessionsAnalyzed, totalTokens}
+  _pf_parts/portrait.json                – framework sentences + portrait (AI analysis, Phase 2)
+  _pf_parts/search_profile.json          – full search profile (AI analysis, Phase 1)
+  _pf_parts/behavioral_fingerprint.json  – behavioral fingerprint data (compute-stats.py)
+  _pf_parts/activity.json                – activity heat map data
+  _pf_parts/meta.json                    – {sessionsAnalyzed, totalTokens}
 
 Writes:
   promptfolio_payload.json  – ready to POST to /api/profile/sync
@@ -32,6 +33,12 @@ search_profile_path = f"{parts}/search_profile.json"
 if os.path.exists(search_profile_path):
     search_profile = json.load(open(search_profile_path))
 
+# Behavioral fingerprint (optional)
+behavioral_fp = None
+bf_path = f"{parts}/behavioral_fingerprint.json"
+if os.path.exists(bf_path):
+    behavioral_fp = json.load(open(bf_path))
+
 payload = {
     "profile": {
         "summary": portrait["portrait"]["summary"],
@@ -52,6 +59,14 @@ if search_profile:
         "frameworkSentences": search_profile.get("frameworkSentences", []),
         "instances": search_profile.get("instances", []),
         "fullDesc": search_profile.get("fullDesc", ""),
+    }
+
+if behavioral_fp:
+    sigs = behavioral_fp.pop("_signatures", [])
+    payload["behavioralFingerprint"] = {
+        "raw": behavioral_fp,
+        "signatures": sigs,
+        "insights": portrait.get("behavioralInsights", []),
     }
 
 with open("promptfolio_payload.json", "w") as f:

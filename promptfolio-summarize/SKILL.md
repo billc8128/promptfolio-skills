@@ -260,6 +260,8 @@ From the Phase 1 results in `_pf_parts/search_profile.json`, select and refine t
 
 **IMPORTANT — save-as-you-go:** Write output to `_pf_parts/portrait.json`. The activity heat map (`_pf_parts/activity.json`) and meta (`_pf_parts/meta.json`) were already saved in Step 2c.
 
+**Behavioral fingerprint context:** If `_pf_parts/behavioral_fingerprint.json` exists, read it and include its content as a `[BEHAVIORAL FINGERPRINT]` section in your analysis context. Use this data to generate `behavioralInsights` — 3-5 sentences of personalized interpretation that combine multiple data points and tell a story about this person's relationship with AI tools. See `analysis-prompt.md` for detailed guidelines.
+
 Select the best framework sentences from Phase 1 and generate the portrait:
 
 ```json
@@ -290,6 +292,10 @@ Select the best framework sentences from Phase 1 and generate the portrait:
   "cognitiveStyle": { "abstraction": 0, "aestheticRigor": 0, "challengeRate": 0, "divergence": 0, "controlGrain": 0, "teachingDrive": 0 },
   "capabilityRings": [
     { "name": "能力名称", "tier": "core" }
+  ],
+  "behavioralInsights": [
+    "结合多个行为数据点的个性化解读（如有 behavioral_fingerprint.json）",
+    "指出数据和对话内容之间的张力或有趣模式"
   ]
 }
 ```
