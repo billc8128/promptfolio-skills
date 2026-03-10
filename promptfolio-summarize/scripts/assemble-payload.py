@@ -42,12 +42,11 @@ if os.path.exists(bf_path):
 payload = {
     "profile": {
         "summary": portrait["portrait"]["summary"],
-        "frameworkSentences": portrait["frameworkSentences"],
-        "portrait": portrait["portrait"],
         "topDomains": portrait.get("topDomains", []),
         "cognitiveStyle": portrait.get("cognitiveStyle") or None,
         "capabilityRings": portrait.get("capabilityRings") or None,
         "decisionStyle": portrait.get("decisionStyle") or None,
+        "controlSignature": portrait.get("controlSignature") or None,
     },
     "activityMap": activity,
     "sessionsAnalyzed": meta["sessionsAnalyzed"],

@@ -148,30 +148,6 @@ Also generate a one-line **signature** — a punchy summary of this person's con
 
 **Important:** Only include domains with clear evidence. The contrast between tight grip and autopilot is what makes this interesting — if everything is medium grip, you're not looking hard enough.
 
-### Step 2: Read the Person from the Framework Sentences
-
-Don't apply templates. Take these framework sentences and ask yourself:
-
-- How does this person define "good"? What are their aesthetic standards?
-- How does this person handle complexity? Through decomposition, abstraction, analogy, or intuition?
-- What unconscious assumptions does this person reveal when teaching the AI?
-- What contradictions does this person have? — Pursuing perfection but rushing to ship, complaining the AI is dumb but unable to work without it
-- Where are this person's blind spots? What pitfalls do they repeatedly fall into?
-- Where does this person's energy come from? What topics make them suddenly verbose?
-
-### Step 3: Write the Assessment
-
-Every assessment must grow directly from a framework sentence. Don't start with a conclusion and then find evidence — start with the original quote, then let understanding grow from it.
-
-**Assessment dimensions are not limited to "ability" and "preference."** Consider:
-- Mental models (how they understand problems)
-- Aesthetic standards (how they define good vs. bad)
-- Teaching style (how they teach the AI)
-- Decision tendencies (how they make trade-offs)
-- Emotional patterns (when they get excited, when they get impatient)
-- Contradictions and tensions (stated positions vs. actual behavior)
-- Blind spots and obsessions (recurring unnoticed patterns)
-
 ---
 
 ## Output Format
@@ -185,14 +161,6 @@ This output has **no quantity limits**. Collect everything.
 **Example for a Chinese-speaking user:**
 ```json
 {
-  "frameworkSentences": [
-    {
-      "quote": "用户的原话（保留原文语言，隐去项目信息）",
-      "frequency": 3,
-      "context": "一句话说明这句话是在什么情境下说的（不暴露项目）",
-      "insight": "一句话解读——这句话为什么暴露了这个人的独特之处"
-    }
-  ],
   "instances": [
     {
       "narrative": "2-4句第三人称叙事。把情境、用户的洞察、结果编织成一个流畅段落——像案例研究小品文。",
@@ -213,14 +181,6 @@ This output has **no quantity limits**. Collect everything.
 **Example for an English-speaking user:**
 ```json
 {
-  "frameworkSentences": [
-    {
-      "quote": "The user's original words (preserve original language, redact project info)",
-      "frequency": 3,
-      "context": "One sentence describing the situation when this was said (no project exposure)",
-      "insight": "One sentence interpretation — why this quote reveals something unique about this person"
-    }
-  ],
   "instances": [
     {
       "narrative": "A 2-4 sentence story in third person. Weaves the situation, the user's insight, and the outcome into one flowing paragraph — like a case study vignette.",
@@ -239,38 +199,18 @@ This output has **no quantity limits**. Collect everything.
 ```
 
 **Phase 1 field rules:**
-- `frameworkSentences`: **No limit.** Collect all. Merge recurring ideas (bump `frequency`).
 - `instances`: **No limit.** Only include instances where the user's contribution reveals genuine domain expertise, taste, or cognitive depth that clearly surpasses the model. Tags must be specific enough to match search queries (e.g., "WebSocket-reconnection", "payment-idempotency", "CSS-grid-layout" — not "backend", "payments", "frontend").
 - `fullDesc`: **Max 500 words.** Dense, evidence-backed. Include specific technologies, frameworks, tools. This is the primary embedding text for search.
 
 ### Phase 2 Output: Display Portrait (`portrait.json`)
 
-This output is curated from Phase 1 results. Framework sentences: include **all** from Phase 1 (user controls visibility via checkboxes on the preview page). Other fields have limits as noted.
+This output is curated from Phase 1 results.
 
 **Example for a Chinese-speaking user:**
 ```json
 {
-  "frameworkSentences": [
-    {
-      "quote": "用户的原话（保留原文语言，隐去项目信息）",
-      "frequency": 3,
-      "context": "一句话说明这句话是在什么情境下说的（不暴露项目）",
-      "insight": "一句话解读——这句话为什么暴露了这个人的独特之处"
-    }
-  ],
   "portrait": {
-    "summary": "[USER]的2-3句画像——不是简历摘要，是让人觉得'我认识这个人了'的素描",
-    "dimensions": [
-      {
-        "label": "维度名称（如：审美洁癖、教学本能、速度执念……）",
-        "left": "低分极（0端的描述词）",
-        "right": "高分极（100端的描述词）",
-        "score": 0-100,
-        "observation": "1-3句评价，必须锚定在具体的框架句上",
-        "evidence": "对应的用户原话",
-        "tension": "这个维度里 AI 的一句话锐评——矛盾/张力或让人会心一笑的洞察"
-      }
-    ]
+    "summary": "[USER]的2-3句画像——不是简历摘要，是让人觉得'我认识这个人了'的素描"
   },
   "topDomains": ["用户涉足的3-5个领域（通用描述）"],
   "cognitiveStyle": {
@@ -310,27 +250,8 @@ This output is curated from Phase 1 results. Framework sentences: include **all*
 **Example for an English-speaking user:**
 ```json
 {
-  "frameworkSentences": [
-    {
-      "quote": "The user's original words (preserve original language, redact project info)",
-      "frequency": 3,
-      "context": "One sentence describing the situation when this was said (no project exposure)",
-      "insight": "One sentence interpretation — why this quote reveals something unique about this person"
-    }
-  ],
   "portrait": {
-    "summary": "A 2-3 sentence portrait of [USER] — not a resume summary, but a sketch that makes readers feel 'I know this person now'",
-    "dimensions": [
-      {
-        "label": "Dimension name (e.g., aesthetic obsession, teaching instinct, speed fixation...)",
-        "left": "Low-end pole (descriptor for the 0 end)",
-        "right": "High-end pole (descriptor for the 100 end)",
-        "score": 0-100,
-        "observation": "1-3 sentence assessment, must be anchored in specific framework sentences",
-        "evidence": "Corresponding user quote",
-        "tension": "AI's one-sentence sharp take on this dimension — contradiction/tension or an insight that makes you smile"
-      }
-    ]
+    "summary": "A 2-3 sentence portrait of [USER] — not a resume summary, but a sketch that makes readers feel 'I know this person now'"
   },
   "topDomains": ["3-5 domains the user is involved in (generic descriptions)"],
   "cognitiveStyle": {
@@ -371,12 +292,6 @@ This output is curated from Phase 1 results. Framework sentences: include **all*
 
 #### Phase 1 fields (Search Profile)
 
-**`frameworkSentences` (no limit — include all from Phase 1; user controls visibility via checkboxes):**
-- `quote`: The user's original words. Chinese stays Chinese, English stays English. Redact project/company/repo names, but preserve everything else.
-- `frequency`: How many sessions this idea appeared in (different phrasings of the same idea count). >=2 is a strong signal.
-- `context`: One sentence describing what was happening when this was said ("while adjusting the layout of an interaction" rather than "while working on [Project Name]'s UI").
-- `insight`: One sentence interpretation. Don't paraphrase the original — say why the quote **is not ordinary**. "Most people would say X, but this person said Y — which reveals..."
-
 **`instances` (no limit, Phase 1 only):**
 - `narrative`: A 2-4 sentence story told in third person. Weave the situation, the user's insight, and the outcome into one flowing paragraph — like a case study vignette, not a structured report. Use `[USER]` as the subject. The narrative should make the reader think "this person knows something I don't." Written in the user's primary language.
 - `tags`: Array of specific, search-friendly tags. Use concrete terms: "WebSocket-reconnection", "payment-idempotency", "CSS-grid-layout", "database-migration", "mobile-gesture-ux". NOT generic labels like "backend", "frontend", "debugging".
@@ -393,17 +308,6 @@ This output is curated from Phase 1 results. Framework sentences: include **all*
 - Not a skills list. A sketch of a person.
 - After reading it, you should feel "I can imagine what chatting with this person would be like."
 - Use `[USER]` as the subject.
-
-**`portrait.dimensions` (4-8 dimensions):**
-- `label`: Use vivid words, not HR vocabulary. In English: "the urge to lecture the AI" > "teaching style", "zero tolerance for ugly" > "aesthetic preference". In Chinese: "给 AI 上课的冲动" > "教学风格", "对丑的零容忍" > "审美偏好".
-- `left`: The pole label for the 0 end of this dimension — a short descriptor (2-6 words). E.g., English: "pragmatist"; Chinese: "实用主义".
-- `right`: The pole label for the 100 end. E.g., English: "aesthetic purist"; Chinese: "审美洁癖". `left` and `right` form the two poles — not opposing good/bad, but a continuous spectrum.
-- `score`: Integer 0-100 representing the user's position on this dimension. Score based on conversation evidence — don't cluster everything in the 70-90 range. Give low scores when evidence is weak, high scores only when evidence is very strong.
-- `observation`: The assessment itself. Be specific, opinionated, and assertive. If an observation could describe 1,000 people simultaneously, delete it and rewrite.
-- `evidence`: Anchoring quote. Every dimension must have at least one user quote as evidence.
-- `tension`: AI's one-sentence sharp take. **Required for every dimension.** Can be a contradiction/tension (stated position vs. actual behavior), or a pointed insight, a remark that makes you smile knowingly. This is the source of the portrait's dimensionality.
-
-**Dimension design principle — unique to each person:** Dimensions are not a fixed template. Each user's `label`, `left`, `right` should be **custom-created** based on their conversation evidence. Two different users should not have the same set of dimensions. Dimension names should immediately evoke a specific person, not a generic category.
 
 **`topDomains` (3-5):**
 - Domains the user is involved in. Generic descriptions, no project information.
