@@ -138,6 +138,24 @@ For each dimension:
 
 **Important:** Only include dimensions where you have clear evidence. If a dimension has no supporting quotes, skip it rather than guess.
 
+### Step 1e: Extract Control Signature
+
+From the collected framework sentences and conversation evidence, identify what this person **controls tightly** versus what they **delegate entirely** to the AI.
+
+**Tight Grip domains** (grip 6-10): Areas where the user gives very specific instructions, overrides the AI repeatedly, insists on certain approaches, or rejects AI output. These are the domains where the user's taste, expertise, or standards are non-negotiable.
+
+**Autopilot domains** (grip 0): Areas where the user says "你搞定"/"handle it"/"just do it" — they trust the AI completely and barely look at the output.
+
+For each domain:
+1. Give it a short, specific name (e.g., "视觉设计 & 审美一致性", "Product Definition & Authenticity", "代码实现")
+2. Assign a grip score (0-10): 0 = full autopilot, 10 = total control
+3. For tight-grip domains (grip >= 6), collect **2-3 direct quotes** as evidence — these must be the user's actual words that prove they control this domain tightly
+4. For autopilot domains (grip = 0), evidence can be empty
+
+Also generate a one-line **signature** — a punchy summary of this person's control pattern (e.g., "控制'做什么'和'像不像真的'，放手'怎么做'", "Controls the 'what' and 'why', delegates the 'how'").
+
+**Important:** Only include domains with clear evidence. The contrast between tight grip and autopilot is what makes this interesting — if everything is medium grip, you're not looking hard enough.
+
 ### Step 2: Read the Person from the Framework Sentences
 
 Don't apply templates. Take these framework sentences and ask yourself:
@@ -190,7 +208,14 @@ This output has **no quantity limits**. Collect everything.
       "tags": ["认证架构安全边界", "OAuth-token校验", "前后端职责划分"]
     }
   ],
-  "fullDesc": "对这个人的完整描述，500字以内。涵盖技术栈、工作领域、思维方式、协作风格、审美标准等。"
+  "fullDesc": "对这个人的完整描述，500字以内。涵盖技术栈、工作领域、思维方式、协作风格、审美标准等。",
+  "controlSignature": {
+    "domains": [
+      { "name": "领域名称", "grip": 9, "evidence": ["用户原话1", "用户原话2"] },
+      { "name": "自动驾驶领域", "grip": 0, "evidence": [] }
+    ],
+    "signature": "一句话总结控制模式"
+  }
 }
 ```
 
@@ -212,7 +237,14 @@ This output has **no quantity limits**. Collect everything.
       "tags": ["real-time-sync-architecture", "WebSocket-vs-REST-tradeoff", "state-consistency-model"]
     }
   ],
-  "fullDesc": "A comprehensive description of this person, max 500 words. Covers tech stack, domains, thinking style, collaboration patterns, aesthetic standards, etc."
+  "fullDesc": "A comprehensive description of this person, max 500 words. Covers tech stack, domains, thinking style, collaboration patterns, aesthetic standards, etc.",
+  "controlSignature": {
+    "domains": [
+      { "name": "Domain name", "grip": 9, "evidence": ["User quote 1", "User quote 2"] },
+      { "name": "Autopilot domain", "grip": 0, "evidence": [] }
+    ],
+    "signature": "One-line summary of control pattern"
+  }
 }
 ```
 
@@ -274,7 +306,14 @@ This output is curated from Phase 1 results. Framework sentences: include **all*
       ],
       "take": "AI 的一句话锐评"
     }
-  ]
+  ],
+  "controlSignature": {
+    "domains": [
+      { "name": "紧控领域名称", "grip": 9, "evidence": ["用户原话1", "用户原话2", "用户原话3"] },
+      { "name": "自动驾驶领域", "grip": 0, "evidence": [] }
+    ],
+    "signature": "一句话总结控制模式"
+  }
 }
 ```
 
@@ -327,7 +366,14 @@ This output is curated from Phase 1 results. Framework sentences: include **all*
       ],
       "take": "AI's one-sentence sharp observation"
     }
-  ]
+  ],
+  "controlSignature": {
+    "domains": [
+      { "name": "Tight-grip domain name", "grip": 9, "evidence": ["User quote 1", "User quote 2", "User quote 3"] },
+      { "name": "Autopilot domain", "grip": 0, "evidence": [] }
+    ],
+    "signature": "One-line summary of control pattern"
+  }
 }
 ```
 
@@ -405,6 +451,16 @@ Each item describes one decision-making dimension:
 - `take`: AI's one-sentence sharp observation about this dimension — same voice as portrait `tension`
 
 Only include dimensions with clear conversational evidence. Skip dimensions where you'd be guessing.
+
+**`controlSignature` (both Phase 1 and Phase 2):**
+
+Identifies what the user controls tightly versus delegates to the AI. Appears in both search_profile.json and portrait.json.
+
+- `domains`: Array of domain objects, sorted by grip score descending (tight grip first, autopilot last).
+  - `name`: Short, specific domain name in the user's language (e.g., "产品定义 & 真实感", "Visual Design & Aesthetics", "代码实现")
+  - `grip`: Integer 0-10. 0 = full autopilot, 10 = total control. Tight grip (6-10) means the user overrides, rejects, or gives very specific instructions in this domain. Autopilot (0) means the user delegates entirely.
+  - `evidence`: Array of 2-3 direct quotes for tight-grip domains (grip >= 6). Empty array for autopilot domains (grip = 0). Quotes must be the user's actual words that prove they control this domain.
+- `signature`: One punchy sentence summarizing the user's overall control pattern — what they hold tight vs what they let go.
 
 ---
 
