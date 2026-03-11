@@ -60,6 +60,10 @@ if search_profile:
         "instances": search_profile.get("instances", []),
         "fullDesc": search_profile.get("fullDesc", ""),
     }
+    # Projects extracted from conversation analysis
+    projects = search_profile.get("projects", [])
+    if projects:
+        payload["projects"] = projects
 
 if behavioral_fp:
     sigs = behavioral_fp.pop("_signatures", [])
