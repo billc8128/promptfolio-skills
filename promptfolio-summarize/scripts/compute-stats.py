@@ -52,12 +52,18 @@ def classify(path):
         return "codex"
     if "/.openclaw/" in path:
         return "openclaw"
+    if "/.gemini/tmp/" in path and "/chats/" in path:
+        return "gemini-cli"
     if "/Antigravity" in path or "/.gemini/antigravity" in path:
         return "antigravity"
     if "/.codeium/" in path or "/.windsurf/" in path or "/Windsurf" in path:
         return "windsurf"
     if "chatgpt" in path.lower() or "conversations" in os.path.basename(path).lower():
         return "chatgpt"
+    if any(x in path for x in ["/Library/Application Support/Trae", "/.trae-cn/", "/.trae/", "promptfolio-trae", "trae-chat-export"]):
+        return "trae"
+    if "promptfolio-opencode" in path or "/.local/share/opencode/" in path:
+        return "opencode"
     return "other"
 
 
@@ -175,7 +181,7 @@ def iter_messages(value):
     out = []
     if isinstance(value, dict):
         out.extend(extract_message_from_obj(value))
-        for key in ("messages", "conversation", "items", "turns", "mapping"):
+        for key in ("messages", "conversation", "items", "turns", "mapping", "sessions"):
             child = value.get(key)
             if isinstance(child, dict):
                 for v in child.values():
@@ -352,6 +358,46 @@ def extract_timestamps(path):
                             pass
         except OSError:
             pass
+
+    if ext == ".json" and not timestamps:
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                obj = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            obj = None
+        if isinstance(obj, dict):
+            # Collect messages from top-level or nested sessions
+            all_msgs = []
+            top_msgs = obj.get("messages", [])
+            if isinstance(top_msgs, list):
+                all_msgs.extend(top_msgs)
+            for sess in (obj.get("sessions") or []):
+                if isinstance(sess, dict):
+                    sess_msgs = sess.get("messages", [])
+                    if isinstance(sess_msgs, list):
+                        all_msgs.extend(sess_msgs)
+            for msg in all_msgs:
+                if not isinstance(msg, dict):
+                    continue
+                ts = msg.get("timestamp")
+                if ts:
+                    if isinstance(ts, str):
+                        try:
+                            dt = datetime.fromisoformat(
+                                ts.replace("Z", "+00:00")
+                            )
+                            timestamps.append(dt)
+                        except (ValueError, TypeError):
+                            pass
+                    elif isinstance(ts, (int, float)):
+                        try:
+                            if ts > 1e12:
+                                ts = ts / 1000
+                            timestamps.append(
+                                datetime.fromtimestamp(ts, tz=timezone.utc)
+                            )
+                        except (ValueError, OSError):
+                            pass
 
     if not timestamps:
         try:
@@ -785,6 +831,16 @@ for spath in sessions:
         m = re.search(r"/(Antigravity|\.gemini/antigravity)/([^/]+)", spath)
         if m:
             bf_projects.add(("antigravity", m.group(2)))
+    elif src == "gemini-cli":
+        m = re.search(r"/\.gemini/tmp/([^/]+)/chats/", spath)
+        if m:
+            bf_projects.add(("gemini-cli", m.group(1)))
+    elif src == "trae":
+        # Trae exports are per-user, not per-project — count as one project per export file
+        bf_projects.add(("trae", os.path.basename(spath)))
+    elif src == "opencode":
+        # OpenCode extracted sessions: each file is a session, count the DB as one project
+        bf_projects.add(("opencode", "default"))
 behavioral["projectCount"] = len(bf_projects)
 
 # ── Signature matching ───────────────────────────────────────────────

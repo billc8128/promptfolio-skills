@@ -64,6 +64,94 @@ if should_scan "chatgpt"; then
     2>/dev/null >> "$SESSION_LIST" || true
 fi
 
+if should_scan "gemini-cli"; then
+  find ~/.gemini/tmp -path "*/chats/session-*.json" -type f 2>/dev/null >> "$SESSION_LIST" || true
+fi
+
+if should_scan "trae"; then
+  # Trae CN / Trae stores AI chat in an encrypted SQLite DB (SQLCipher).
+  # We cannot read it directly. Scan for user-exported chat files and
+  # any accessible JSON/JSONL in known locations.
+  TRAE_FOUND=0
+  for TRAE_EXPORT in \
+    "$HOME/.trae-cn/chat-export.json" \
+    "$HOME/.trae/chat-export.json" \
+    "$HOME/Desktop/trae-chat-export.json" \
+    "$HOME/Downloads/trae-chat-export.json"; do
+    [ -f "$TRAE_EXPORT" ] && echo "$TRAE_EXPORT" >> "$SESSION_LIST" && TRAE_FOUND=1
+  done
+  # Also scan for any exported conversation files
+  while IFS= read -r _tf; do
+    echo "$_tf" >> "$SESSION_LIST"
+    TRAE_FOUND=1
+  done < <(find "$HOME/.trae-cn" "$HOME/.trae" \
+    -maxdepth 2 -name "*chat*export*.json" -type f 2>/dev/null || true)
+  # Output detection marker if Trae is installed but no exports found
+  if [ "$TRAE_FOUND" = "0" ]; then
+    for TRAE_DIR in \
+      "$HOME/.trae-cn" \
+      "$HOME/.trae" \
+      "$HOME/Library/Application Support/Trae CN" \
+      "$HOME/Library/Application Support/Trae"; do
+      [ -d "$TRAE_DIR" ] && echo "TRAE_DETECTED_NO_EXPORT" >&2 && break
+    done
+  fi
+fi
+
+if should_scan "opencode"; then
+  OC_DB="$HOME/.local/share/opencode/opencode.db"
+  if [ -f "$OC_DB" ]; then
+    OC_DIR=$(mktemp -d /tmp/promptfolio-opencode.XXXXXX)
+    PF_OC_DB="$OC_DB" PF_OC_DIR="$OC_DIR" python3 -c "
+import sqlite3, json, os, sys, re
+db = sqlite3.connect(os.environ['PF_OC_DB'])
+out = os.environ['PF_OC_DIR']
+
+def table_exists(name):
+    return db.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name=?\", (name,)).fetchone() is not None
+
+if not table_exists('session') or not table_exists('message'):
+    sys.exit(0)
+
+_safe_re = re.compile(r'[^a-zA-Z0-9_-]')
+has_part = table_exists('part')
+
+for sid, tc in db.execute('SELECT id, time_created FROM session'):
+    safe_sid = _safe_re.sub('_', str(sid))[:200]
+    if not safe_sid:
+        continue
+    msgs = []
+    for mid, mdata, mtc in db.execute('SELECT id, data, time_created FROM message WHERE session_id=? ORDER BY time_created', (sid,)):
+        try: md = json.loads(mdata)
+        except: md = {}
+        parts = []
+        if has_part:
+            for (pd,) in db.execute('SELECT data FROM part WHERE message_id=? ORDER BY time_created', (mid,)):
+                try: parts.append(json.loads(pd))
+                except: pass
+        role = md.get('role', 'unknown')
+        texts = []
+        for p in parts:
+            if isinstance(p, dict):
+                t = p.get('text','') or p.get('content','')
+                if isinstance(t, str) and t: texts.append(t)
+        if not texts and 'content' in md:
+             t = md['content']
+             if isinstance(t, str): texts.append(t)
+        if texts:
+            msgs.append({'role': role, 'content': chr(10).join(texts), 'timestamp': mtc})
+    if not msgs: continue
+    fp = os.path.join(out, safe_sid + '.json')
+    with open(fp, 'w') as f: json.dump({'messages': msgs}, f)
+    print(fp)
+db.close()
+" >> "$SESSION_LIST" 2>/tmp/promptfolio-opencode-errors.log || {
+      [ -s /tmp/promptfolio-opencode-errors.log ] && echo "opencode: extraction errors logged to /tmp/promptfolio-opencode-errors.log" >&2
+      true
+    }
+  fi
+fi
+
 # ── Deduplicate ───────────────────────────────────────────────────────
 
 sort -u -o "$SESSION_LIST" "$SESSION_LIST"

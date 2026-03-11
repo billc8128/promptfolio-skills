@@ -1,6 +1,6 @@
 ---
 name: promptfolio-summarize
-description: Analyze AI conversation history across Claude Code, Cursor, Codex, ChatGPT, Antigravity, Windsurf, OpenClaw and other coding agents to find framework sentences — moments where the user teaches the AI how to think — and build a portrait that reveals who this person is.
+description: Analyze AI conversation history across Claude Code, Cursor, Codex, ChatGPT, Gemini CLI, Trae, OpenCode, Antigravity, Windsurf, OpenClaw and other coding agents to find framework sentences — moments where the user teaches the AI how to think — and build a portrait that reveals who this person is.
 allowed-tools: Bash, Read, Glob, Grep, Write, AskUserQuestion
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Bash, Read, Glob, Grep, Write, AskUserQuestion
 
 You are building a **portrait of the human user** — the person running this command is the subject being analyzed. Their portrait will be displayed on the **promptfolio** platform. You are not summarizing projects, not evaluating AI usage skills, not writing a performance review. You are finding the moments where this person teaches AI how to think — their **framework sentences** — and using those to paint a picture of who they are.
 
-To do this, analyze their AI conversation history (Claude Code, Cursor, Codex, ChatGPT, Antigravity, Windsurf, OpenClaw and any other coding agents found on the system) from the **last 30 days**, extract an **activity heat map** and **framework sentences** that reveal this person's thinking, then build a portrait around those sentences.
+To do this, analyze their AI conversation history (Claude Code, Cursor, Codex, ChatGPT, Gemini CLI, Trae, OpenCode, Antigravity, Windsurf, OpenClaw and any other coding agents found on the system) from the **last 30 days**, extract an **activity heat map** and **framework sentences** that reveal this person's thinking, then build a portrait around those sentences.
 
 **Fundamental principle: find where the user is TEACHING, not where they are COMMANDING.** "Fix this bug" tells you nothing. "Don't think about it that way — this isn't a performance problem, it's a user psychology problem" / "你不要这样想，这不是性能问题，是用户心理问题" tells you everything.
 
@@ -75,9 +75,12 @@ Before scanning, check which AI coding tools the user actually has installed. Lo
 | Cursor | `~/.cursor/projects/` exists |
 | Codex | `~/.codex/` exists |
 | OpenClaw | `~/.openclaw/` exists |
+| Gemini CLI | `~/.gemini/tmp/` exists (with `chats/` subdirs) |
 | Antigravity | `~/Library/Application Support/Antigravity/` or `~/.gemini/antigravity/` exists |
 | Windsurf | `~/.codeium/windsurf/`, `~/.windsurf/`, or `~/Library/Application Support/Windsurf/` exists |
 | ChatGPT | `~/Desktop/chatgpt_history/` exists (user must export data manually) |
+| Trae | `~/.trae/`, `~/.trae-cn/`, or App Support `Trae` directories exist (note: DB is encrypted) |
+| OpenCode | `~/.local/share/opencode/opencode.db` exists |
 
 Run a quick check:
 
@@ -87,17 +90,20 @@ echo "=== Detected AI tools ==="
 [ -d ~/.cursor/projects ] && echo "cursor"
 [ -d ~/.codex ] && echo "codex"
 [ -d ~/.openclaw ] && echo "openclaw"
+[ -d ~/.gemini/tmp ] && echo "gemini-cli"
 [ -d "$HOME/Library/Application Support/Antigravity" ] || [ -d ~/.gemini/antigravity ] && echo "antigravity"
 [ -d ~/.codeium/windsurf ] || [ -d ~/.windsurf ] || [ -d "$HOME/Library/Application Support/Windsurf" ] && echo "windsurf"
 [ -d ~/Desktop/chatgpt_history ] && echo "chatgpt"
+[ -d "$HOME/Library/Application Support/Trae CN/ModularData/ai-agent" ] || [ -d "$HOME/Library/Application Support/Trae/ModularData/ai-agent" ] && echo "trae"
+[ -f "$HOME/.local/share/opencode/opencode.db" ] && echo "opencode"
 ```
 
 Then scan for **other coding agents** not in the list above. Look for dot-directories in `~/` and app directories in `~/Library/Application Support/` that look like AI coding tools (e.g. Kiro, Aider, Continue, Copilot Chat, Trae, Roo Code, etc.):
 
 ```bash
 echo "=== Checking for other coding agents ==="
-ls -d ~/.kiro ~/.aider* ~/.continue ~/.trae ~/.roo* 2>/dev/null || true
-ls -d "$HOME/Library/Application Support/Kiro" "$HOME/Library/Application Support/Continue" "$HOME/Library/Application Support/Trae" 2>/dev/null || true
+ls -d ~/.kiro ~/.aider* ~/.continue ~/.roo* 2>/dev/null || true
+ls -d "$HOME/Library/Application Support/Kiro" "$HOME/Library/Application Support/Continue" 2>/dev/null || true
 ```
 
 If you find any unknown tool directories, peek inside to see if they contain conversation logs (.jsonl, .json, .txt). If they do, include them — no need to ask the user.
@@ -190,6 +196,39 @@ Then use **AskQuestion tool** to ask:
 - Extract nodes where `message.author.role == "user"`
 - Get user text from `message.content.parts[]`
 - Sort by `create_time` when reconstructing chronology
+
+**Gemini CLI sessions (`.json` in `~/.gemini/tmp/*/chats/`):**
+- Each file is a full session: `{"sessionId":"...","messages":[{"type":"user|model","content":[{"text":"..."}],"timestamp":"..."}]}`
+- `type: "user"` = user message, `type: "model"` = assistant response
+- Content is an array of parts, each with a `text` field
+- Timestamps are ISO 8601 strings
+- Project name is the parent directory under `tmp/` (e.g. `~/.gemini/tmp/myproject/chats/`)
+
+**Trae sessions (VS Code fork by ByteDance — encrypted DB, requires user-assisted export):**
+- Trae stores AI chat in an **encrypted SQLite DB** (SQLCipher) at `~/Library/Application Support/Trae CN/ModularData/ai-agent/database.db` — **cannot be read directly**
+- Home directory: `~/.trae-cn/` (CN) or `~/.trae/` (international)
+- The discover script checks for exported chat files at `~/.trae-cn/chat-export.json`, `~/.trae/chat-export.json`, `~/Desktop/trae-chat-export.json`, `~/Downloads/trae-chat-export.json`
+- **If Trae is detected but no export files are found** (stderr contains `TRAE_DETECTED_NO_EXPORT`), ask the user with `AskUserQuestion`:
+  - Explain: "Trae stores chat history in an encrypted database. To include Trae data, you can export it from within Trae."
+  - Option 1: **"Export from Trae"** — Tell the user to open Trae, start a new chat, and send this message:
+    ```
+    Export all my chat history as a JSON file. Save it to ~/.trae-cn/chat-export.json (or ~/.trae/chat-export.json for international version).
+    The JSON format should be: {"messages": [{"role": "user", "content": "...", "timestamp": "2026-01-01T12:00:00Z"}, {"role": "assistant", "content": "...", "timestamp": "..."}]}
+    If there are multiple sessions, combine all messages from all sessions into one flat messages array, ordered by timestamp.
+    ```
+    Then re-run the discover script after the user confirms export is done.
+  - Option 2: **"Skip Trae"** — Continue without Trae data.
+- Do NOT attempt to decrypt or brute-force the database
+- The exported JSON file, once created, will be picked up automatically on future runs
+
+**OpenCode sessions (SQLite → extracted JSON):**
+- The discover script extracts sessions from `~/.local/share/opencode/opencode.db` into temp JSON files
+- Each extracted file: `{"messages":[{"role":"user|assistant","content":"...","timestamp":1234567890}]}`
+- Timestamps are Unix epoch integers (seconds)
+- If the extracted JSON files are missing or empty, fall back to querying the DB directly:
+  ```bash
+  sqlite3 ~/.local/share/opencode/opencode.db "SELECT data FROM message WHERE session_id='...' ORDER BY time_created"
+  ```
 
 **Antigravity / Windsurf (experimental sources):**
 - Prefer explicit transcript files (`.jsonl`, `.json`, `.txt`) when present
