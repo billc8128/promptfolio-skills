@@ -12,24 +12,40 @@ To do this, analyze their AI conversation history (Claude Code, Cursor, Codex, C
 
 **Fundamental principle: find where the user is TEACHING, not where they are COMMANDING.** "Fix this bug" tells you nothing. "Don't think about it that way — this isn't a performance problem, it's a user psychology problem" / "你不要这样想，这不是性能问题，是用户心理问题" tells you everything.
 
-## Step 0: Version Check
+## Step 0: Version Check & Auto-Update
 
-Before anything else, check if a newer version is available. Run this silently — only show output if an update is needed:
+Before anything else, check if a newer version is available. If an update exists, **auto-update local skill files before proceeding** to ensure data format compatibility:
 
 ```bash
 LOCAL_V=$(cat ~/.promptfolio/VERSION 2>/dev/null || echo "0")
 SKILL_API_URL=$(python3 -c "import json; print(json.load(open('$HOME/.promptfolio/config.json')).get('api_url','https://promptfolio.club'))" 2>/dev/null || echo "https://promptfolio.club")
 REMOTE_V=$(curl -sfL --max-time 3 "$SKILL_API_URL/skills/VERSION" 2>/dev/null || echo "$LOCAL_V")
 if [ "$LOCAL_V" != "$REMOTE_V" ]; then
-  echo "UPDATE_AVAILABLE"
+  echo "UPDATING"
+  # Download and overwrite all skill files
+  for SKILL_NAME in promptfolio-summarize promptfolio-search-people promptfolio-search-skills promptfolio-logout; do
+    SKILL_DIR="$HOME/.promptfolio/skills/$SKILL_NAME"
+    mkdir -p "$SKILL_DIR/scripts"
+    curl -sfL "$SKILL_API_URL/skills/$SKILL_NAME/SKILL.md" -o "$SKILL_DIR/SKILL.md" 2>/dev/null || true
+    # Download known script/resource files (silently skip 404s)
+    for F in analysis-prompt.md device-auth.sh scripts/discover-sessions.sh scripts/compute-stats.py scripts/assemble-payload.py scripts/post-sync.sh; do
+      curl -sfL "$SKILL_API_URL/skills/$SKILL_NAME/$F" -o "$SKILL_DIR/$F" 2>/dev/null || true
+    done
+  done
+  echo "$REMOTE_V" > ~/.promptfolio/VERSION
+  echo "UPDATED to v$REMOTE_V"
 else
-  echo "UP_TO_DATE"
+  echo "UP_TO_DATE v$LOCAL_V"
 fi
 ```
 
-If `UPDATE_AVAILABLE`, show this message **before proceeding** (do NOT block — still continue with the skill):
+If auto-update succeeds, tell the user:
 
-> **Update available!** A new version of promptfolio skills is available. Re-run the install command you used originally to update.
+> **Skills updated to v{REMOTE_V}.** Continuing with the latest version.
+
+If `curl` fails (no network), tell the user but **still continue** with the existing local version — don't block:
+
+> **Could not check for updates** (network unavailable). Running with local version v{LOCAL_V}.
 
 Then continue with Step 1 normally.
 
