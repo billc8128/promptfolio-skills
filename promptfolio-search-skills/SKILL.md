@@ -9,25 +9,19 @@ allowed-tools: Bash, Read, AskUserQuestion
 
 You are helping the user search the promptfolio platform for reusable skills — proven techniques for interacting with AI agents that other users have developed and shared.
 
-## Step 0: Version Check
+## Step 0: Auto-Update
 
-Before anything else, check if a newer version is available:
+Before anything else, run the auto-updater to ensure you have the latest skill files and data formats:
 
 ```bash
-LOCAL_V=$(cat ~/.promptfolio/VERSION 2>/dev/null || echo "0")
-REMOTE_V=$(curl -sfL --max-time 3 https://promptfolio.club/skills/VERSION 2>/dev/null || echo "$LOCAL_V")
-if [ "$LOCAL_V" != "$REMOTE_V" ]; then
-  echo "UPDATE_AVAILABLE"
-else
-  echo "UP_TO_DATE"
-fi
+bash ~/.promptfolio/update-check.sh
 ```
 
-If `UPDATE_AVAILABLE`, show this before proceeding (do NOT block):
+- If output is `UPDATED v...` → tell the user: **"Skills updated to v{version}."** Then **re-read this SKILL.md file** since it may have changed, and continue from Step 1.
+- If output is `UP_TO_DATE v...` → continue silently.
+- If output is `OFFLINE v...` → tell the user: **"Could not check for updates (offline). Running with local v{version}."** Continue normally.
 
-> **Update available!** Run `curl -sfL promptfolio.club/install.sh | bash` to update.
-
-Then continue with Step 1.
+Then continue with Step 1 normally.
 
 ## Step 1: Authentication
 
