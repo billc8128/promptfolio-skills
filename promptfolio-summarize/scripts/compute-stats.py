@@ -18,6 +18,7 @@ Environment:
 import os
 import json
 import re
+import sys
 import hashlib
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -32,9 +33,26 @@ CACHE_PATH = os.environ.get(
 
 # ── Load session list ─────────────────────────────────────────────────
 
-session_list_path = os.environ.get("SESSION_LIST", "")
+session_list_path = (
+    (sys.argv[1] if len(sys.argv) > 1 else "")
+    or os.environ.get("SESSION_LIST", "")
+)
 if not session_list_path:
-    print("ERROR: SESSION_LIST environment variable not set")
+    # Fallback: find a recent promptfolio session list in /tmp (max 5 min old)
+    import glob as _glob
+    import time as _time
+
+    _now = _time.time()
+    _candidates = [
+        f for f in _glob.glob("/tmp/promptfolio-sessions.*")
+        if (_now - os.path.getmtime(f)) < 300
+    ]
+    if _candidates:
+        session_list_path = max(_candidates, key=os.path.getmtime)
+        print(f"Using fallback session list: {session_list_path}")
+
+if not session_list_path:
+    print("ERROR: No session list found. Pass path as argument or set SESSION_LIST env var.")
     raise SystemExit(1)
 
 with open(session_list_path, "r") as f:

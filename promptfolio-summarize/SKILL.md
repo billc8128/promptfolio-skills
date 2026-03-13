@@ -105,35 +105,31 @@ Present the results: "Detected: Claude Code, Cursor. Also found: Kiro (has sessi
 
 Set `PF_SOURCES` to the known tools for the script, and handle unknown tools manually in 2b.
 
-### 2b. Find session files
+### 2b. Find session files and compute statistics
 
-Run the discovery script, targeting only the detected tools:
+Run discovery and stats in **one shell invocation** (environment variables do not persist between separate shell calls):
 
 ```bash
 export PF_SOURCES="claude-code,cursor"  # only the detected ones from 2a
 SESSION_LIST=$(bash "SKILL_DIR/scripts/discover-sessions.sh")
-export SESSION_LIST
+python3 "SKILL_DIR/scripts/compute-stats.py" "$SESSION_LIST"
 ```
 
-The script scans known locations for each tool and filters to the last 30 days. After running it:
-
-1. **Check zero-session tools** — if a detected tool has 0 sessions, explore its data directory yourself to find files the script missed.
-2. **Handle unknown tools** — for any extra coding agents discovered in 2a, explore their data directories, find conversation log files (.jsonl, .json, .txt), and append them to `$SESSION_LIST`.
-3. **Ask the user** if they have session data in non-standard locations or from tools you didn't detect.
-
-If you find additional session files, append them to `$SESSION_LIST`.
-
-### 2c. Compute statistics + activity data
-
-Run the stats script to compute token estimates and extract activity heat map data in a single pass:
-
-```bash
-python3 "SKILL_DIR/scripts/compute-stats.py"
-```
-
-This reads `$SESSION_LIST` and produces:
+The discovery script scans known locations for each tool and filters to the last 30 days. The stats script then computes token estimates and extracts activity heat map data in a single pass, producing:
 - **stdout**: session/token summary per source
 - **`_pf_parts/activity.json`**: per-day activity data for the heat map visualization
+- **`_pf_parts/meta.json`**: `{sessionsAnalyzed, totalTokens}`
+
+After running:
+
+1. **Check zero-session tools** — if a detected tool has 0 sessions, explore its data directory yourself to find files the script missed.
+2. **Handle unknown tools** — for any extra coding agents discovered in 2a, explore their data directories, find conversation log files (.jsonl, .json, .txt), and append them to the session list file at `$SESSION_LIST`.
+3. **Ask the user** if they have session data in non-standard locations or from tools you didn't detect.
+
+If you find additional session files, append them to the session list file and re-run the stats script:
+```bash
+python3 "SKILL_DIR/scripts/compute-stats.py" "$SESSION_LIST"
+```
 
 ### 2d. Present summary and ask user
 

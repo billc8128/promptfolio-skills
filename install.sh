@@ -11,6 +11,8 @@ install_auth_helper() {
   curl -sfL "$AUTH_HELPER_URL" -o "$AUTH_HELPER_PATH"
   chmod +x "$AUTH_HELPER_PATH"
   curl -sfL "$BASE_URL/VERSION" -o "$HOME/.promptfolio/VERSION" 2>/dev/null || true
+  curl -sfL "$BASE_URL/update-check.sh" -o "$HOME/.promptfolio/update-check.sh" 2>/dev/null || true
+  chmod +x "$HOME/.promptfolio/update-check.sh" 2>/dev/null || true
 }
 
 # Download once to ~/.promptfolio/skills/
@@ -100,6 +102,35 @@ if [ -d "$HOME/.openclaw" ]; then
   echo "  Linked to OpenClaw"
 fi
 
+# Trae / Trae CN
+if [ -d "$HOME/.trae" ] || [ -d "$HOME/.trae-cn" ] || [ -d "$HOME/Library/Application Support/Trae" ] || [ -d "$HOME/Library/Application Support/Trae CN" ]; then
+  link_to_agent "$HOME/.trae/skills"
+  [ -d "$HOME/.trae-cn" ] && link_to_agent "$HOME/.trae-cn/skills"
+  [ -n "$INSTALLED" ] && INSTALLED="$INSTALLED + Trae" || INSTALLED="Trae"
+  echo "  Linked to Trae"
+fi
+
+# Windsurf
+if [ -d "$HOME/.windsurf" ] || [ -d "$HOME/.codeium/windsurf" ] || [ -d "$HOME/Library/Application Support/Windsurf" ]; then
+  link_to_agent "$HOME/.windsurf/skills"
+  [ -n "$INSTALLED" ] && INSTALLED="$INSTALLED + Windsurf" || INSTALLED="Windsurf"
+  echo "  Linked to Windsurf"
+fi
+
+# Gemini CLI
+if [ -d "$HOME/.gemini/tmp" ]; then
+  link_to_agent "$HOME/.gemini/skills"
+  [ -n "$INSTALLED" ] && INSTALLED="$INSTALLED + Gemini CLI" || INSTALLED="Gemini CLI"
+  echo "  Linked to Gemini CLI"
+fi
+
+# OpenCode
+if [ -f "$HOME/.local/share/opencode/opencode.db" ] || [ -d "$HOME/.opencode" ]; then
+  link_to_agent "$HOME/.opencode/skills"
+  [ -n "$INSTALLED" ] && INSTALLED="$INSTALLED + OpenCode" || INSTALLED="OpenCode"
+  echo "  Linked to OpenCode"
+fi
+
 # Antigravity (workflow-based, experimental)
 if [ -d "$HOME/.gemini/antigravity" ] || [ -d "$HOME/Library/Application Support/Antigravity" ]; then
   link_to_antigravity "$HOME/.gemini/antigravity/global_workflows"
@@ -113,9 +144,13 @@ if [ -z "$INSTALLED" ]; then
   link_to_agent "$HOME/.cursor/skills"
   link_to_agent "$HOME/.codex/skills"
   link_to_agent "$HOME/.openclaw/skills"
+  link_to_agent "$HOME/.trae/skills"
+  link_to_agent "$HOME/.windsurf/skills"
+  link_to_agent "$HOME/.gemini/skills"
+  link_to_agent "$HOME/.opencode/skills"
   link_to_antigravity "$HOME/.gemini/antigravity/global_workflows"
-  INSTALLED="Claude Code + Cursor + Codex + OpenClaw + Antigravity"
-  echo "  Linked to Claude Code + Cursor + Codex + OpenClaw + Antigravity"
+  INSTALLED="Claude Code + Cursor + Codex + OpenClaw + Trae + Windsurf + Gemini CLI + OpenCode + Antigravity"
+  echo "  Linked to all supported agents"
 fi
 
 echo ""

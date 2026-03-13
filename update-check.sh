@@ -31,15 +31,28 @@ curl -sfL "$API_URL/skills/update-check.sh" -o "$PF_DIR/update-check.sh.tmp" 2>/
 # 2. Update all skill files
 SKILLS="promptfolio-summarize promptfolio-search-people promptfolio-search-skills promptfolio-logout"
 FILES="SKILL.md analysis-prompt.md device-auth.sh scripts/discover-sessions.sh scripts/compute-stats.py scripts/assemble-payload.py scripts/post-sync.sh"
+FAIL=0
 
 for SKILL in $SKILLS; do
   SKILL_DIR="$PF_DIR/skills/$SKILL"
   mkdir -p "$SKILL_DIR/scripts" 2>/dev/null || true
   for F in $FILES; do
-    curl -sfL "$API_URL/skills/$SKILL/$F" -o "$SKILL_DIR/$F" 2>/dev/null || true
+    curl -sfL "$API_URL/skills/$SKILL/$F" -o "$SKILL_DIR/$F.tmp" 2>/dev/null && \
+      mv "$SKILL_DIR/$F.tmp" "$SKILL_DIR/$F" || true
   done
+  # Restore execute bits on scripts
+  chmod +x "$SKILL_DIR/device-auth.sh" "$SKILL_DIR/scripts/discover-sessions.sh" "$SKILL_DIR/scripts/post-sync.sh" 2>/dev/null || true
 done
 
-# 3. Write new version
-echo "$REMOTE_V" > "$PF_DIR/VERSION"
-echo "UPDATED v$REMOTE_V"
+# Verify at least the main SKILL.md downloaded successfully
+if [ ! -s "$PF_DIR/skills/promptfolio-summarize/SKILL.md" ]; then
+  FAIL=1
+fi
+
+# 3. Write new version only if update succeeded
+if [ "$FAIL" -eq 0 ]; then
+  echo "$REMOTE_V" > "$PF_DIR/VERSION.tmp" && mv "$PF_DIR/VERSION.tmp" "$PF_DIR/VERSION"
+  echo "UPDATED v$REMOTE_V"
+else
+  echo "UPDATE_FAILED v$LOCAL_V"
+fi
