@@ -95,6 +95,8 @@ Based on all collected framework sentences and instances, write a comprehensive 
 - Aesthetic standards and quality preferences
 - Any unique characteristics that set them apart
 
+**Tech stack accuracy:** If `[BEHAVIORAL FINGERPRINT]` includes a `techStack` field (file extension statistics from actual code), use it as a **primary reference**. Technologies in the behavioral data are confirmed. For technologies NOT in the behavioral data, require **hands-on evidence** in conversations — the user is writing, debugging, or configuring that technology (code blocks, error traces, build configs), not merely discussing or mentioning it. A user asking "Go vs Rust 哪个好" does not mean they use Go. A user debugging a Go compilation error across multiple turns does.
+
 Every claim should be backed by evidence from conversations. This is not a resume — it's an informed description written by someone who's observed this person working.
 
 ### Step 1d: Extract Decision Style
@@ -299,6 +301,7 @@ This output is curated from Phase 1 results.
 **`fullDesc` (max 500 words, Phase 1 only):**
 - A comprehensive, evidence-backed description of this person.
 - Must include: specific technologies and tools (React, PostgreSQL, Swift, Drizzle ORM, etc.), domains with detail, thinking style, collaboration patterns, aesthetic standards.
+- **Tech stack must be grounded in behavioral data** (`techStack` from `[BEHAVIORAL FINGERPRINT]`) or hands-on conversation evidence (writing/debugging code, not merely discussing).
 - Written in the user's primary language.
 - Not a resume — more like a knowledgeable colleague describing someone.
 
@@ -311,6 +314,7 @@ This output is curated from Phase 1 results.
 
 **`topDomains` (3-5):**
 - Domains the user is involved in. Generic descriptions, no project information.
+- Must reflect actual work evidenced in conversations or behavioral data, not topics merely discussed.
 
 **`cognitiveStyle` (6 dimensions, 0-100):**
 

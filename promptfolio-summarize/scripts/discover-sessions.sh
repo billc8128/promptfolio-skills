@@ -26,7 +26,7 @@ should_scan() {
 # ── Find session files ────────────────────────────────────────────────
 
 if should_scan "claude-code"; then
-  find ~/.claude/projects/ -name "*.jsonl" -not -path "*/subagents/*" -type f 2>/dev/null >> "$SESSION_LIST" || true
+  find ~/.claude/projects/ -name "*.jsonl" -type f 2>/dev/null >> "$SESSION_LIST" || true
 fi
 
 if should_scan "cursor"; then
