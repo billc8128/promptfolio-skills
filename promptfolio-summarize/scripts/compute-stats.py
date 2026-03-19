@@ -333,6 +333,62 @@ def extract_claude_code_tokens(path):
     return total
 
 
+def extract_codex_tokens(path):
+    """Extract exact tokens from Codex JSONL.
+
+    Codex emits token_count events with a running total (total_token_usage)
+    and per-call usage (last_token_usage). total_tokens = input + output,
+    where input includes cached tokens. Take the last event's running total.
+    """
+    last_total = 0
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                    if obj.get("type") == "event_msg":
+                        payload = obj.get("payload", {})
+                        if isinstance(payload, dict) and payload.get("type") == "token_count":
+                            info = payload.get("info", {})
+                            tu = info.get("total_token_usage", {})
+                            if isinstance(tu, dict):
+                                val = tu.get("total_tokens", 0)
+                                if isinstance(val, (int, float)) and val > last_total:
+                                    last_total = int(val)
+                except (json.JSONDecodeError, KeyError):
+                    continue
+    except OSError:
+        return 0
+    return last_total
+
+
+def extract_gemini_cli_tokens(path):
+    """Extract exact tokens from Gemini CLI session JSON.
+
+    Each gemini message has a tokens object with per-call usage.
+    tokens.input includes cached portion; tokens.total = input + output + thoughts.
+    Sum total across all gemini messages.
+    """
+    total = 0
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            obj = json.load(f)
+        for msg in obj.get("messages", []):
+            if not isinstance(msg, dict):
+                continue
+            tokens = msg.get("tokens")
+            if isinstance(tokens, dict):
+                val = tokens.get("total", 0)
+                if isinstance(val, (int, float)):
+                    total += int(val)
+    except (OSError, json.JSONDecodeError):
+        return 0
+    return total
+
+
 # ── Timestamp extraction (for activity heat map) ─────────────────────
 
 
@@ -557,33 +613,45 @@ for path in sessions:
                     by_source[source]["bytesEstimate"] += 1
                 next_cache[path] = {"fp": fp, "tokens": int(est), "method": method}
         else:
-            messages = parse_messages(path, size)
-            replay_est, turns = estimate_tokens_from_messages(messages)
-            if replay_est > 0 and turns > 0:
-                est = replay_est
-                method = "replay"
-            else:
-                tok_est = estimate_tokens_from_text(path, size)
-                if tok_est > 0:
-                    est = tok_est
-                    method = "tokenizer"
-                else:
-                    est = size // 3
-                    method = "bytes"
+            # Try exact extraction for sources that have usage data
+            exact = 0
+            if source == "codex":
+                exact = extract_codex_tokens(path)
+            elif source == "gemini-cli":
+                exact = extract_gemini_cli_tokens(path)
 
-            by_source[source]["tokens"] += est
-            total_tokens += est
-            if method == "exact":
+            if exact > 0:
+                est = exact
+                method = "exact"
+                by_source[source]["tokens"] += est
+                total_tokens += est
                 by_source[source]["exact"] += 1
-            elif method == "replay":
-                by_source[source]["replayEstimate"] += 1
-                if source != "claude-code":
-                    replay_adjust.append((source, est))
-            elif method == "tokenizer":
-                by_source[source]["tokenizerEstimate"] += 1
+                next_cache[path] = {"fp": fp, "tokens": int(est), "method": method}
             else:
-                by_source[source]["bytesEstimate"] += 1
-            next_cache[path] = {"fp": fp, "tokens": int(est), "method": method}
+                messages = parse_messages(path, size)
+                replay_est, turns = estimate_tokens_from_messages(messages)
+                if replay_est > 0 and turns > 0:
+                    est = replay_est
+                    method = "replay"
+                else:
+                    tok_est = estimate_tokens_from_text(path, size)
+                    if tok_est > 0:
+                        est = tok_est
+                        method = "tokenizer"
+                    else:
+                        est = size // 3
+                        method = "bytes"
+
+                by_source[source]["tokens"] += est
+                total_tokens += est
+                if method == "replay":
+                    by_source[source]["replayEstimate"] += 1
+                    replay_adjust.append((source, est))
+                elif method == "tokenizer":
+                    by_source[source]["tokenizerEstimate"] += 1
+                else:
+                    by_source[source]["bytesEstimate"] += 1
+                next_cache[path] = {"fp": fp, "tokens": int(est), "method": method}
 
     # ── Activity timestamps ───────────────────────────────────────
 
