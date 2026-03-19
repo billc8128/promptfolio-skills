@@ -250,7 +250,7 @@ def parse_messages(path, size):
             return []
         # Split on role markers, capturing multi-line content until the next marker
         role_pattern = re.compile(
-            r"(?im)^(user|assistant|system|tool)\s*[:：]\s*", re.MULTILINE
+            r"^(user|assistant|system|tool)\s*[:：]\s*", re.MULTILINE | re.IGNORECASE
         )
         splits = role_pattern.split(text)
         # splits: ['preamble', 'role1', 'content1', 'role2', 'content2', ...]
@@ -338,7 +338,8 @@ def extract_codex_tokens(path):
 
     Codex emits token_count events with a running total (total_token_usage)
     and per-call usage (last_token_usage). total_tokens = input + output,
-    where input includes cached tokens. Take the last event's running total.
+    where input includes cached tokens. Take the maximum running total seen
+    (monotonically increasing within a session).
     """
     last_total = 0
     try:
@@ -365,7 +366,7 @@ def extract_codex_tokens(path):
     return last_total
 
 
-def extract_gemini_cli_tokens(path):
+def extract_gemini_cli_tokens(path, max_bytes=20 * 1024 * 1024):
     """Extract exact tokens from Gemini CLI session JSON.
 
     Each gemini message has a tokens object with per-call usage.
@@ -374,6 +375,8 @@ def extract_gemini_cli_tokens(path):
     """
     total = 0
     try:
+        if os.path.getsize(path) > max_bytes:
+            return 0
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             obj = json.load(f)
         for msg in obj.get("messages", []):
