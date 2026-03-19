@@ -248,13 +248,19 @@ def parse_messages(path, size):
             text, _, _ = safe_read_text(path)
         except OSError:
             return []
-        for m in re.finditer(
-            r"(?im)^(user|assistant|system|tool)\s*[:：]\s*(.+)$", text
-        ):
-            role = normalize_role(m.group(1))
-            content = m.group(2).strip()
+        # Split on role markers, capturing multi-line content until the next marker
+        role_pattern = re.compile(
+            r"(?im)^(user|assistant|system|tool)\s*[:：]\s*", re.MULTILINE
+        )
+        splits = role_pattern.split(text)
+        # splits: ['preamble', 'role1', 'content1', 'role2', 'content2', ...]
+        i = 1
+        while i + 1 < len(splits):
+            role = normalize_role(splits[i].strip())
+            content = splits[i + 1].strip()
             if role and content:
                 messages.append((role, content))
+            i += 2
         return messages
 
     return []
