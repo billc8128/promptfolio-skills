@@ -103,7 +103,7 @@ function appSupport() {
 
 function scanClaudeCode() {
   const dir = path.join(HOME, ".claude", "projects");
-  results.push(...walk(dir, (f) => f.endsWith(".jsonl")));
+  results.push(...walk(dir, (f) => f.endsWith(".jsonl"), { maxDepth: 8 }));
 }
 
 function scanCursor() {
@@ -111,32 +111,33 @@ function scanCursor() {
   results.push(...walk(dir, (f, name) => {
     if (!f.includes("agent-transcripts")) return false;
     return name.endsWith(".txt") || name.endsWith(".jsonl");
-  }));
+  }, { maxDepth: 8 }));
 }
 
 function scanCodex() {
   const sessionsDir = path.join(HOME, ".codex", "sessions");
-  results.push(...walk(sessionsDir, (f) => f.endsWith(".jsonl")));
+  results.push(...walk(sessionsDir, (f) => f.endsWith(".jsonl"), { maxDepth: 8 }));
   const historyFile = path.join(HOME, ".codex", "history.jsonl");
   if (isFile(historyFile)) results.push(historyFile);
 }
 
 function scanOpenclaw() {
-  results.push(...walk(path.join(HOME, ".openclaw", "sessions"), (f) => f.endsWith(".jsonl")));
-  results.push(...walk(path.join(HOME, ".openclaw", "agents"), (f) => f.endsWith(".jsonl")));
+  results.push(...walk(path.join(HOME, ".openclaw", "sessions"), (f) => f.endsWith(".jsonl"), { maxDepth: 8 }));
+  results.push(...walk(path.join(HOME, ".openclaw", "agents"), (f) => f.endsWith(".jsonl"), { maxDepth: 8 }));
 }
 
 function scanAntigravity() {
   // macOS Application Support
   const asDir = path.join(appSupport(), "Antigravity");
   results.push(...walk(asDir, (f, name) => {
+    if (name === "state.vscdb") return false;
     if (f.includes("exthost") && f.includes("google.antigravity") && name.endsWith(".log")) return true;
     return name.endsWith(".jsonl") || name.endsWith(".json");
-  }));
+  }, { maxDepth: 8 }));
   // ~/.gemini/antigravity
   results.push(...walk(path.join(HOME, ".gemini", "antigravity"), (f, name) =>
     name.endsWith(".jsonl") || name.endsWith(".json")
-  ));
+  , { maxDepth: 8 }));
 }
 
 function scanWindsurf() {
@@ -152,7 +153,7 @@ function scanWindsurf() {
       if (name.endsWith(".jsonl") || name.endsWith(".json")) return true;
       if (f.includes("agent-transcripts")) return true;
       return false;
-    }));
+    }, { maxDepth: 8 }));
   }
 }
 
@@ -173,7 +174,7 @@ function scanGeminiCli() {
   const dir = path.join(HOME, ".gemini", "tmp");
   results.push(...walk(dir, (f, name) => {
     return f.includes("chats") && name.startsWith("session-") && name.endsWith(".json");
-  }));
+  }, { maxDepth: 6 }));
 }
 
 function scanTrae() {
@@ -216,11 +217,13 @@ function scanOpencode() {
   if (!isFile(dbPath)) return;
 
   // Extract sessions from SQLite using Python (cross-platform, sqlite3 built-in)
+  // Paths passed via env vars to avoid shell injection risks with execSync -c
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "promptfolio-opencode-"));
-  const pyScript = `
+  const pyScript = path.join(tmpDir, "_extract.py");
+  fs.writeFileSync(pyScript, `
 import sqlite3, json, os, sys, re
-db = sqlite3.connect(${JSON.stringify(dbPath)})
-out = ${JSON.stringify(tmpDir)}
+db = sqlite3.connect(os.environ['PF_OC_DB'])
+out = os.environ['PF_OC_DIR']
 def table_exists(name):
     return db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (name,)).fetchone() is not None
 if not table_exists('session') or not table_exists('message'):
@@ -255,15 +258,18 @@ for sid, tc in db.execute('SELECT id, time_created FROM session'):
     with open(fp, 'w') as f: json.dump({'messages': msgs}, f)
     print(fp)
 db.close()
-`;
+`);
+
+  const env = { ...process.env, PF_OC_DB: dbPath, PF_OC_DIR: tmpDir };
 
   // Try python3 first, then python
   for (const py of ["python3", "python"]) {
     try {
-      const output = execSync(`${py} -c ${JSON.stringify(pyScript)}`, {
+      const output = execSync(`${py} ${JSON.stringify(pyScript)}`, {
         encoding: "utf-8",
         timeout: 30000,
         stdio: ["pipe", "pipe", "pipe"],
+        env,
       }).trim();
       if (output) {
         results.push(...output.split("\n").filter(Boolean));
