@@ -140,6 +140,8 @@ Present a summary to the user:
 - Activity heat map highlights: most active day, latest night, longest session
 - Estimated total tokens (labeled as "estimated")
 
+**Cursor token accuracy note:** If Cursor sessions were detected, mention that Cursor tokens are **estimated from local transcripts** (which don't contain system prompts, thinking tokens, or tool call overhead — the actual usage is higher). For more accurate Cursor token data, the user can check their usage at `cursor.com/settings` (Settings → Usage). This is optional and does not block the analysis.
+
 Then use **AskQuestion tool** to ask:
 
 - Question: "Proceed with analysis?"
