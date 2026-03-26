@@ -55,32 +55,50 @@ if not session_list_path:
     print("ERROR: No session list found. Pass path as argument or set SESSION_LIST env var.")
     raise SystemExit(1)
 
-with open(session_list_path, "r") as f:
+with open(session_list_path, "r", encoding="utf-8") as f:
     sessions = [l.strip() for l in f if l.strip()]
+
+# ── Platform normalization ───────────────────────────────────────────
+# On Windows, MSYS/Git Bash may produce paths like /c/Users/... which
+# native Python cannot open. Convert them to C:\Users\... format.
+
+import platform as _platform
+
+if _platform.system() == "Windows":
+    import re as _re_win
+    _msys_re = _re_win.compile(r"^/([a-zA-Z])/")
+    def _normalize_path(p):
+        m = _msys_re.match(p)
+        if m:
+            return m.group(1).upper() + ":\\" + p[3:].replace("/", "\\")
+        return p
+    sessions = [_normalize_path(s) for s in sessions]
 
 # ── Classifier ────────────────────────────────────────────────────────
 
 
 def classify(path):
-    if "/.claude/" in path:
+    # Normalize separators for cross-platform matching
+    p = path.replace("\\", "/")
+    if "/.claude/" in p:
         return "claude-code"
-    if "/.cursor/" in path:
+    if "/.cursor/" in p:
         return "cursor"
-    if "/.codex/" in path:
+    if "/.codex/" in p:
         return "codex"
-    if "/.openclaw/" in path:
+    if "/.openclaw/" in p:
         return "openclaw"
-    if "/.gemini/tmp/" in path and "/chats/" in path:
+    if "/.gemini/tmp/" in p and "/chats/" in p:
         return "gemini-cli"
-    if "/Antigravity" in path or "/.gemini/antigravity" in path:
+    if "/Antigravity" in p or "/.gemini/antigravity" in p:
         return "antigravity"
-    if "/.codeium/" in path or "/.windsurf/" in path or "/Windsurf" in path:
+    if "/.codeium/" in p or "/.windsurf/" in p or "/Windsurf" in p:
         return "windsurf"
-    if "chatgpt" in path.lower() or "conversations" in os.path.basename(path).lower():
+    if "chatgpt" in p.lower() or "conversations" in os.path.basename(p).lower():
         return "chatgpt"
-    if any(x in path for x in ["/Library/Application Support/Trae", "/.trae-cn/", "/.trae/", "promptfolio-trae", "trae-chat-export"]):
+    if any(x in p for x in ["/Application Support/Trae", "/.trae-cn/", "/.trae/", "promptfolio-trae", "trae-chat-export"]):
         return "trae"
-    if "promptfolio-opencode" in path or "/.local/share/opencode/" in path:
+    if "promptfolio-opencode" in p or "/.local/share/opencode/" in p:
         return "opencode"
     return "other"
 
@@ -353,8 +371,9 @@ def extract_codex_tokens(path):
                     if obj.get("type") == "event_msg":
                         payload = obj.get("payload", {})
                         if isinstance(payload, dict) and payload.get("type") == "token_count":
-                            info = payload.get("info", {})
-                            tu = info.get("total_token_usage", {})
+                            info = payload.get("info") or {}
+                            if not isinstance(info, dict): continue
+                            tu = info.get("total_token_usage") or {}
                             if isinstance(tu, dict):
                                 val = tu.get("total_tokens", 0)
                                 if isinstance(val, (int, float)) and val > last_total:

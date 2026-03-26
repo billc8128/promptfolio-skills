@@ -111,9 +111,11 @@ Run discovery and stats in **one shell invocation** (environment variables do no
 
 ```bash
 export PF_SOURCES="claude-code,cursor"  # only the detected ones from 2a
-SESSION_LIST=$(bash "SKILL_DIR/scripts/discover-sessions.sh")
+SESSION_LIST=$(node "SKILL_DIR/scripts/discover-sessions.js")
 python3 "SKILL_DIR/scripts/compute-stats.py" "$SESSION_LIST"
 ```
+
+> **Windows note:** If `python3` is not found, try `python` instead. The discover script is Node.js and works on all platforms without bash.
 
 The discovery script scans known locations for each tool and filters to the last 30 days. The stats script then computes token estimates and extracts activity heat map data in a single pass, producing:
 - **stdout**: session/token summary per source
